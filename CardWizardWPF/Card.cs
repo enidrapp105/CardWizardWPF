@@ -13,8 +13,10 @@ namespace CardWizardWPF
         public string Name { get; set; }
         public string Description { get; set; }
         public string FolderPath { get; set; }
+        public int AmountInDeck { get; set; }
         public Image Image { get; set; }
         public List<UIElement> Canvaselements { get; set; }
+        public List<String> Attributes { get; set; }
 
     }
 }

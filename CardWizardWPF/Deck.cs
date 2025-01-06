@@ -16,6 +16,8 @@ namespace CardWizardWPF
         public int CardCount { get; set; }
 
         public List<Card> Cards;
+        public List<String> Attributes { get; set; }
+
 
         public void Add_Card(Card card)
         {

@@ -18,8 +18,16 @@
             <!-- Buttons -->
         </Grid.RowDefinitions>
         <Label Content="CardCreator"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="2" Margin="10">
+        <StackPanel  Name="commandBar" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Row="0" Margin="10">
+            
+        </StackPanel>
+
+        <StackPanel Name="canvasholder" Grid.Row="1">
+
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="3" Margin="10">
             <Button Content="Back" Width="200" Margin="5" Click="Creator_Back_Button_Click"/>
+            <Button Content="Save card to deck" Width="200" Margin="5" Click="Creator_Save_Card_Button_Click"/>
         </StackPanel>
     </Grid>
 </Page>
