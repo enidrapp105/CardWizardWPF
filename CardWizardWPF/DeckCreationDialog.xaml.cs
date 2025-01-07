@@ -27,8 +27,8 @@ namespace CardWizardWPF
             else if (Dimension2RadioButton.IsChecked == true)
             {
                 //SelectedDimension = "8.6 x 5.9 cm";
-                DeckWidth = 8.6;
-                DeckHeight = 5.9;
+                DeckWidth = 5.9;
+                DeckHeight = 8.6;
             }
             this.DialogResult = true;
             this.Close();

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,6 +26,10 @@ namespace CardWizardWPF
         public Card card;
         public Deck deck;
         Canvas cardcanvas;
+        private bool isImageDragging = false;
+        private double imageOffsetX, imageOffsetY;
+        private Point[] points;
+
         public CardCreatorPage(Deck deck, Card card)
         {
             this.card = card;
@@ -39,9 +44,25 @@ namespace CardWizardWPF
                 Width = CmToDeviceIndependentUnits(this.deck.CardWidth),
                 Background = new SolidColorBrush(Colors.White),
             };
+
+            // Initialize points based on cardcanvas size
+            InitializePoints(cardcanvas.Width, cardcanvas.Height);
+
             canvasholder.Children.Add(cardcanvas);
             commandBar.Children.Add(CreateTextButton());
             commandBar.Children.Add(CreateImageButton());
+        }
+
+        // Initialize the points array dynamically
+        private void InitializePoints(double canvasWidth, double canvasHeight)
+        {
+            points = new Point[]
+            {
+                new Point(0, 0),                  // Top-left
+                new Point(canvasWidth, 0),       // Top-right
+                new Point(0, canvasHeight),      // Bottom-left
+                new Point(canvasWidth, canvasHeight) // Bottom-right
+            };
         }
         //BUTTONS CREATORS *****************************************
         private Button CreateImageButton()
@@ -113,6 +134,9 @@ namespace CardWizardWPF
                 Canvas.SetLeft(image, (canvasWidth - image.Width) / 2);  // Center horizontally
                 Canvas.SetTop(image, (canvasHeight - image.Height) / 2); // Center vertically
 
+                image.MouseDown += Element_MouseDown;
+                image.MouseMove += Element_MouseMoved;
+                image.MouseUp += Element_MouseUp;
                 // Add the Image control to the Canvas
                 cardcanvas.Children.Add(image);
             }
@@ -171,7 +195,9 @@ namespace CardWizardWPF
                     // Set initial position
                     Canvas.SetLeft(textBlock, 10); // Example positioning, adjust as needed
                     Canvas.SetTop(textBlock, 10);
-
+                    textBlock.MouseDown += Element_MouseDown;
+                    textBlock.MouseMove += Element_MouseMoved;
+                    textBlock.MouseUp += Element_MouseUp;
                     // Add the TextBlock to the Canvas
                     cardcanvas.Children.Add(textBlock);
                 }
@@ -202,7 +228,112 @@ namespace CardWizardWPF
         }
         private void Creator_Save_Card_Button_Click(object sender, RoutedEventArgs e)
         {
+            // Calculate the bounds of the area defined by points
+            double minX = points.Min(p => p.X);
+            double maxX = points.Max(p => p.X);
+            double minY = points.Min(p => p.Y);
+            double maxY = points.Max(p => p.Y);
 
+            // Calculate the width and height of the area to capture
+            double captureWidth = maxX - minX;
+            double captureHeight = maxY - minY;
+
+            // Adjust canvas position to align with minX and minY
+            Canvas.SetLeft(cardcanvas, -minX);
+            Canvas.SetTop(cardcanvas, -minY);
+
+            // Apply clipping to canvas to only render within defined bounds
+            RectangleGeometry clipGeometry = new RectangleGeometry
+            {
+                Rect = new Rect(0, 0, captureWidth, captureHeight)
+            };
+            cardcanvas.Clip = clipGeometry;
+
+            // Create a RenderTargetBitmap with adjusted size
+            var renderTargetBitmap = new RenderTargetBitmap(
+                (int)captureWidth,
+                (int)captureHeight,
+                96,
+                96,
+                PixelFormats.Pbgra32
+            );
+
+            renderTargetBitmap.Render(cardcanvas);
+
+            // Reset canvas position and clipping after rendering
+            Canvas.SetLeft(cardcanvas, 0);
+            Canvas.SetTop(cardcanvas, 0);
+            cardcanvas.Clip = null;
+
+            // Encode the bitmap into PNG format
+            PngBitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+            // Save the PNG to a file
+            using (var stream = new FileStream("output.png", FileMode.Create))
+            {
+                encoder.Save(stream);
+            }
+
+            MessageBox.Show("Image saved as output.png", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+
+
+        //****************************************************************************
+        //
+        //   MOUSE PRESSED/MOVED/RELEASED HANDLERS
+        //
+        //****************************************************************************
+        private void Element_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is UIElement element && cardcanvas != null)
+            {
+                // Check if the right mouse button is pressed
+                if (e.ChangedButton == MouseButton.Right)
+                {
+                    // Right-click detected, show context menu
+                    return;
+                }
+
+                isImageDragging = true;
+
+                // Capture the mouse to ensure it continues to receive mouse events even if the pointer moves outside the element
+                element.CaptureMouse();
+
+                // Get the current mouse position relative to the canvas
+                Point pointerPosition = e.GetPosition(cardcanvas);
+                imageOffsetX = pointerPosition.X - Canvas.GetLeft(element);
+                imageOffsetY = pointerPosition.Y - Canvas.GetTop(element);
+            }
+        }
+        private void Element_MouseMoved(object sender, MouseEventArgs e)
+        {
+            if (isImageDragging && sender is UIElement element && cardcanvas != null)
+            {
+                // Get the current mouse position relative to the canvas
+                Point pointerPosition = e.GetPosition(cardcanvas);
+
+                double newX = pointerPosition.X - imageOffsetX;
+                double newY = pointerPosition.Y - imageOffsetY;
+
+                // Ensure the image stays within the bounds of the canvas (optional)
+                //newX = Math.Max(0, Math.Min(newX, cardcanvas.ActualWidth - image.ActualWidth));
+                //newY = Math.Max(0, Math.Min(newY, cardcanvas.ActualHeight - image.ActualHeight));
+
+                // Update the position of the image
+                Canvas.SetLeft(element, newX);
+                Canvas.SetTop(element, newY);
+            }
+        }
+        private void Element_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is UIElement element)
+            {
+                isImageDragging = false;
+                element.ReleaseMouseCapture();
+            }
+        }
+
     }
 }
