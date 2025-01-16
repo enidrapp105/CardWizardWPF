@@ -228,55 +228,66 @@ namespace CardWizardWPF
         }
         private void Creator_Save_Card_Button_Click(object sender, RoutedEventArgs e)
         {
-            // Calculate the bounds of the area defined by points
-            double minX = points.Min(p => p.X);
-            double maxX = points.Max(p => p.X);
-            double minY = points.Min(p => p.Y);
-            double maxY = points.Max(p => p.Y);
-
-            // Calculate the width and height of the area to capture
-            double captureWidth = maxX - minX;
-            double captureHeight = maxY - minY;
-
-            // Adjust canvas position to align with minX and minY
-            Canvas.SetLeft(cardcanvas, -minX);
-            Canvas.SetTop(cardcanvas, -minY);
-
-            // Apply clipping to canvas to only render within defined bounds
-            RectangleGeometry clipGeometry = new RectangleGeometry
+            try
             {
-                Rect = new Rect(0, 0, captureWidth, captureHeight)
-            };
-            cardcanvas.Clip = clipGeometry;
+                // Get the size of the canvas
+                double canvasWidth = cardcanvas.ActualWidth;
+                double canvasHeight = cardcanvas.ActualHeight;
 
-            // Create a RenderTargetBitmap with adjusted size
-            var renderTargetBitmap = new RenderTargetBitmap(
-                (int)captureWidth,
-                (int)captureHeight,
-                96,
-                96,
-                PixelFormats.Pbgra32
-            );
+                // Ensure the canvas size is valid
+                if (canvasWidth <= 0 || canvasHeight <= 0)
+                {
+                    MessageBox.Show("Canvas size is invalid. Please ensure it has proper dimensions.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            renderTargetBitmap.Render(cardcanvas);
+                // Create a RenderTargetBitmap matching the exact canvas dimensions
+                var renderTargetBitmap = new RenderTargetBitmap(
+                    (int)Math.Ceiling(canvasWidth),
+                    (int)Math.Ceiling(canvasHeight),
+                    96, // DPI X
+                    96, // DPI Y
+                    PixelFormats.Pbgra32
+                );
 
-            // Reset canvas position and clipping after rendering
-            Canvas.SetLeft(cardcanvas, 0);
-            Canvas.SetTop(cardcanvas, 0);
-            cardcanvas.Clip = null;
+                // Create a visual and render only the canvas area
+                DrawingVisual visual = new DrawingVisual();
+                using (DrawingContext context = visual.RenderOpen())
+                {
+                    // Define clipping bounds to match the canvas
+                    var clippingRect = new Rect(0, 0, canvasWidth, canvasHeight);
+                    context.PushClip(new RectangleGeometry(clippingRect));
 
-            // Encode the bitmap into PNG format
-            PngBitmapEncoder encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+                    // Render the canvas
+                    VisualBrush canvasBrush = new VisualBrush(cardcanvas);
+                    context.DrawRectangle(canvasBrush, null, clippingRect);
 
-            // Save the PNG to a file
-            using (var stream = new FileStream("output.png", FileMode.Create))
-            {
-                encoder.Save(stream);
+                    // End clipping
+                    context.Pop();
+                }
+
+                // Render the visual onto the bitmap
+                renderTargetBitmap.Render(visual);
+
+                // Save the bitmap as a PNG file
+                PngBitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+                using (var fileStream = new FileStream("output.png", FileMode.Create))
+                {
+                    encoder.Save(fileStream);
+                }
+
+                MessageBox.Show("Image saved as output.png", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-
-            MessageBox.Show("Image saved as output.png", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+
+
 
 
 
