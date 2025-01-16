@@ -115,24 +115,24 @@ namespace CardWizardWPF
                 // Set initial position (optional)
                 Canvas.SetLeft(image, 0);
                 Canvas.SetTop(image, 0);
-                // Calculate the scale factors
-                double canvasWidth = cardcanvas.ActualWidth;
-                double canvasHeight = cardcanvas.ActualHeight;
-                double imageWidth = bitmapImage.PixelWidth;
-                double imageHeight = bitmapImage.PixelHeight;
+                //// Calculate the scale factors
+                //double canvasWidth = cardcanvas.ActualWidth;
+                //double canvasHeight = cardcanvas.ActualHeight;
+                //double imageWidth = bitmapImage.PixelWidth;
+                //double imageHeight = bitmapImage.PixelHeight;
 
-                // Scale image to fit inside the canvas while maintaining its aspect ratio
-                double widthRatio = canvasWidth / imageWidth;
-                double heightRatio = canvasHeight / imageHeight;
-                double scaleRatio = Math.Min(widthRatio, heightRatio);
+                //// Scale image to fit inside the canvas while maintaining its aspect ratio
+                //double widthRatio = canvasWidth / imageWidth;
+                //double heightRatio = canvasHeight / imageHeight;
+                //double scaleRatio = Math.Min(widthRatio, heightRatio);
 
-                // Set the scaled width and height for the image
-                image.Width = imageWidth * scaleRatio;
-                image.Height = imageHeight * scaleRatio;
+                //// Set the scaled width and height for the image
+                //image.Width = imageWidth * scaleRatio;
+                //image.Height = imageHeight * scaleRatio;
 
                 // Set initial position (optional)
-                Canvas.SetLeft(image, (canvasWidth - image.Width) / 2);  // Center horizontally
-                Canvas.SetTop(image, (canvasHeight - image.Height) / 2); // Center vertically
+                Canvas.SetLeft(image, 0);  // Center horizontally
+                Canvas.SetTop(image, 0); // Center vertically
 
                 image.MouseDown += Element_MouseDown;
                 image.MouseMove += Element_MouseMoved;
