@@ -141,6 +141,14 @@ namespace CardWizardWPF
                 cardcanvas.Children.Add(image);
             }
         }
+        //**********************************************************
+        // Function name: TextButton_Click
+        //
+        // Purpose: Handles the click of the add text button
+        // 
+        // Parameters: standard click params
+        //
+        // Returns: N/A
         private void TextButton_Click(object sender, RoutedEventArgs e)
         {
             // Create a new window for text input
@@ -207,8 +215,14 @@ namespace CardWizardWPF
             // Show the input dialog
             inputWindow.ShowDialog();
         }
-
-
+        //**********************************************************
+        // Function name: Creator_Back_Button_Click
+        //
+        // Purpose: Handles the click of the back button
+        // 
+        // Parameters: standard click params
+        //
+        // Returns: N/A
         private void Creator_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)
@@ -220,12 +234,28 @@ namespace CardWizardWPF
                 MessageBox.Show("Unable to navigate back.", "Error");
             }
         }
+        //**********************************************************
+        // Function name: CmToDeviceIndependentUnits
+        //
+        // Purpose: converts centimeters to device independent units
+        // 
+        // Parameters: centimeters in float form
+        //
+        // Returns: device independent units
         private double CmToDeviceIndependentUnits(double cm)
         {
             const double cmPerInch = 2.54;
             const double dpi = 96.0; // WPF uses 96 DPI for device-independent units
             return cm * (dpi / cmPerInch);
         }
+        //**********************************************************
+        // Function name: Creator_Save_Card_Button_Click
+        //
+        // Purpose: Handles the click of the save card button
+        // 
+        // Parameters: standard click params
+        //
+        // Returns: N/A
         private void Creator_Save_Card_Button_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -251,11 +281,11 @@ namespace CardWizardWPF
                 );
 
                 //// Render the exact bounds of the canvas
-                cardcanvas.Measure(new Size(canvasWidth, canvasHeight));
+                cardcanvas.Measure(new Size(canvasWidth, canvasHeight)); // this rearanges the canvas's position visually
                 cardcanvas.Arrange(new Rect(new Size(canvasWidth, canvasHeight)));
                 renderTargetBitmap.Render(cardcanvas);
-                canvasholder.Children.Clear();
-                canvasholder.Children.Add(cardcanvas);
+                canvasholder.Children.Clear(); //clear the holder
+                canvasholder.Children.Add(cardcanvas); //readd the canvas to reset it's position
                 // Save the bitmap as a PNG file
                 PngBitmapEncoder encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
@@ -273,11 +303,6 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred: {ex.Message}", "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-
-
-
-
 
         //****************************************************************************
         //
