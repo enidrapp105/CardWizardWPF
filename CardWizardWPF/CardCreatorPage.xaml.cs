@@ -241,7 +241,7 @@ namespace CardWizardWPF
                     return;
                 }
 
-                // Create a RenderTargetBitmap matching the exact canvas dimensions
+                // Create a RenderTargetBitmap matching the canvas size
                 var renderTargetBitmap = new RenderTargetBitmap(
                     (int)Math.Ceiling(canvasWidth),
                     (int)Math.Ceiling(canvasHeight),
@@ -250,35 +250,23 @@ namespace CardWizardWPF
                     PixelFormats.Pbgra32
                 );
 
-                // Create a visual and render only the canvas area
-                DrawingVisual visual = new DrawingVisual();
-                using (DrawingContext context = visual.RenderOpen())
-                {
-                    // Define clipping bounds to match the canvas
-                    var clippingRect = new Rect(0, 0, canvasWidth, canvasHeight);
-                    context.PushClip(new RectangleGeometry(clippingRect));
-
-                    // Render the canvas
-                    VisualBrush canvasBrush = new VisualBrush(cardcanvas);
-                    context.DrawRectangle(canvasBrush, null, clippingRect);
-
-                    // End clipping
-                    context.Pop();
-                }
-
-                // Render the visual onto the bitmap
-                renderTargetBitmap.Render(visual);
-
+                //// Render the exact bounds of the canvas
+                cardcanvas.Measure(new Size(canvasWidth, canvasHeight));
+                cardcanvas.Arrange(new Rect(new Size(canvasWidth, canvasHeight)));
+                renderTargetBitmap.Render(cardcanvas);
+                canvasholder.Children.Clear();
+                canvasholder.Children.Add(cardcanvas);
                 // Save the bitmap as a PNG file
                 PngBitmapEncoder encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
-                using (var fileStream = new FileStream("output.png", FileMode.Create))
+                string filePath = "output.png";
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
                     encoder.Save(fileStream);
                 }
 
-                MessageBox.Show("Image saved as output.png", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Image saved as {filePath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
