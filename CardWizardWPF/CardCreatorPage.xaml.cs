@@ -14,7 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-
+using Path = System.IO.Path;
 
 namespace CardWizardWPF
 {
@@ -289,14 +289,15 @@ namespace CardWizardWPF
                 // Save the bitmap as a PNG file
                 PngBitmapEncoder encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
-
-                string filePath = "output.png";
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                string filenamewithimagepath = "image\\thumbnail.png";
+                string filepath = Path.Combine(card.FolderPath, filenamewithimagepath);
+                //combine file name with card.FolderPath
+                using (var fileStream = new FileStream(filepath, FileMode.Create))
                 {
                     encoder.Save(fileStream);
                 }
 
-                MessageBox.Show($"Image saved as {filePath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Image saved as {filepath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {

@@ -29,8 +29,111 @@ namespace CardWizardWPF
             this.deck = deck;
             InitializeComponent();
             Deckname.Content = this.deck.Deckname;
+            Manager_Load_Card_Buttons();
+
+        }
+        private void Manager_Load_Card_Buttons()
+        {
+            try
+            {
+                // Construct the card folder path
+                string folderPath = Path.Combine(deck.FolderPath, "cards");
+
+                // Clear existing buttons in the UI
+                CardButtonsPanel.Children.Clear();
+
+                // Ensure the card folder exists
+                if (!Directory.Exists(folderPath))
+                {
+                    MessageBox.Show("Card folder does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Loop through the cards in the deck
+                foreach (var card in deck.Cards)
+                {
+                    // Create a stack panel for each card
+                    StackPanel cardButtonPanel = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Margin = new Thickness(5)
+                    };
+
+                    // Create the main button for the card
+                    Button cardButton = new Button
+                    {
+                        Content = card.Name,
+                        Tag = card, // Store the card object in the Tag property
+                        Margin = new Thickness(5),
+                        Padding = new Thickness(10)
+                    };
+                    cardButton.Click += CardButton_Click;
+
+                    // Create the delete button for the card
+                    Button deleteButton = new Button
+                    {
+                        Content = "Delete",
+                        Tag = card, // Store the card object in the Tag property
+                        Margin = new Thickness(5),
+                        Padding = new Thickness(10)
+                    };
+                    deleteButton.Click += Manager_Delete_Card_Click;
+
+                    // Add buttons to the stack panel
+                    cardButtonPanel.Children.Add(cardButton);
+                    cardButtonPanel.Children.Add(deleteButton);
+
+                    // Add the stack panel to the parent container
+                    CardButtonsPanel.Children.Add(cardButtonPanel);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while loading card buttons: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
+        private void CardButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is Card card)
+            {
+                MessageBox.Show($"You selected the card: {card.Name}", "Card Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Perform additional actions with the selected card if needed
+            }
+        }
+
+        private void Manager_Delete_Card_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is Button button && button.Tag is Card card)
+                {
+                    // Confirm deletion
+                    var result = MessageBox.Show(
+                        $"Are you sure you want to delete the card '{card.Name}'?",
+                        "Confirm Deletion",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        // Call the Delete_Card method
+                        Delete_Card(card);
+
+                        // Reload the card buttons after deletion
+                        Manager_Load_Card_Buttons();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while deleting the card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void Delete_Card(Card card)
+        {
+            deck.Delete_Card(card);
+        }
         private void Manager_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)

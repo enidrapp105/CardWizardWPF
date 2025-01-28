@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace CardWizardWPF
 {
@@ -26,14 +28,40 @@ namespace CardWizardWPF
 
         public void Delete_Card(Card card)
         {
-            foreach(Card card2 in Cards)
+            try
             {
-                if(card2 == card)
+                // Ensure the card exists in the collection
+                if (!Cards.Contains(card))
                 {
-                    Cards.Remove(card2);
+                    MessageBox.Show("The card does not exist in the collection.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Remove the card from the collection
+                Cards.Remove(card);
+
+                // Construct the directory path
+                string cardFolder = "cards";
+                string folderPath = Path.Combine(this.FolderPath, cardFolder, card.Name);
+
+                // Check if the directory exists
+                if (Directory.Exists(folderPath))
+                {
+                    // Delete the directory and its contents
+                    Directory.Delete(folderPath, true);
+                    MessageBox.Show($"The card '{card.Name}' and its directory have been deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show($"The directory for '{card.Name}' does not exist.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while deleting the card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
 
         public Card Select_Card(string cardname)
         {
