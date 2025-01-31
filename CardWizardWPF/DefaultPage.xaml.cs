@@ -27,18 +27,20 @@ namespace CardWizardWPF
     {
         private const string DecksFolder = "CardWizardDecks";
         private Deck? selected_deck;
+        private List<Deck>? decks;
         public DefaultPage()
         {
             selected_deck = null;
+            decks = new List<Deck>();
             InitializeComponent();
+            LoadDeckList();
             LoadDeckButtons();
 
         }
-
-        private void LoadDeckButtons()
+        private void LoadDeckList()
         {
             string parentDirectory = Path.Combine(Directory.GetCurrentDirectory(), DecksFolder);
-            DeckButtonPanel.Children.Clear();
+            decks.Clear();
 
             if (!Directory.Exists(parentDirectory))
             {
@@ -48,39 +50,27 @@ namespace CardWizardWPF
 
             foreach (var deckDirectory in Directory.GetDirectories(parentDirectory))
             {
-                string configPath = Path.Combine(deckDirectory, "config.json");
-                if (File.Exists(configPath))
+                var deck = new Deck { FolderPath = deckDirectory };
+                deck.Load_Deck_From_File();
+                decks.Add(deck);
+            }
+        }
+        private void LoadDeckButtons()
+        {
+            DeckButtonPanel.Children.Clear();
+
+            foreach (var deck in decks)
+            {
+                var button = new Button
                 {
-                    try
-                    {
-                        // Read and deserialize the JSON configuration
-                        string jsonContent = File.ReadAllText(configPath);
-                        var config = JsonSerializer.Deserialize<Deck>(jsonContent);
+                    Content = $"{deck.Deckname} ({deck.CardCount} cards)",
+                    Width = 300,
+                    Margin = new Thickness(5),
+                    Tag = deck.FolderPath
+                };
+                button.Click += DeckButton_Click;
 
-                        if (config != null)
-                        {
-                            string deckName = config.Deckname ?? Path.GetFileName(deckDirectory);
-                            int cardCount = config.CardCount;
-
-                            // Create a button for this deck
-                            var button = new Button
-                            {
-                                Content = $"{deckName} ({cardCount} cards)",
-                                Width = 300,
-                                Margin = new Thickness(5),
-                                Tag = deckDirectory // Store directory for later use
-                            };
-                            button.Click += DeckButton_Click;
-
-                            DeckButtonPanel.Children.Add(button);
-                        }
-                    }
-                    catch (JsonException ex)
-                    {
-                        // Handle JSON parsing errors (log or display an error)
-                        Debug.WriteLine($"Error parsing JSON in {configPath}: {ex.Message}");
-                    }
-                }
+                DeckButtonPanel.Children.Add(button);
             }
         }
 
@@ -99,37 +89,12 @@ namespace CardWizardWPF
 
                 try
                 {
-                    // Read and deserialize the JSON configuration
-                    string jsonContent = File.ReadAllText(configPath);
-                    var config = JsonSerializer.Deserialize<Deck>(jsonContent);
 
-                    if (config == null)
-                    {
-                        MessageBox.Show("Invalid or missing configuration details.", "Error");
-                        return;
-                    }
 
-                    selected_deck = new Deck
-                    {
-                        Deckname = config.Deckname,
-                        CardWidth = config.CardWidth,
-                        CardHeight = config.CardHeight,
-                        FolderPath = folderPath,
-                        Cards = new List<Card>()
-                    };
+                    selected_deck = new Deck();
+                    selected_deck.FolderPath = folderPath;
+                    selected_deck.Load_Deck_From_File();
 
-                    // Populate the card list by checking for card files in the "cards" folder
-                    string cardsFolder = Path.Combine(folderPath, "cards");
-                    if (Directory.Exists(cardsFolder))
-                    {
-                        foreach (var cardFile in Directory.GetFiles(cardsFolder))
-                        {
-                            string cardName = Path.GetFileNameWithoutExtension(cardFile);
-                            selected_deck.Cards.Add(new Card { Name = cardName });
-                        }
-                    }
-
-                    selected_deck.CardCount = selected_deck.Cards.Count;
 
                     MessageBox.Show($"Deck '{selected_deck.Deckname}' loaded with {selected_deck.CardCount} cards.", "Deck Loaded");
                 }

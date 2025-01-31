@@ -18,16 +18,16 @@
             <RowDefinition Height="Auto" />
             <!-- Buttons -->
         </Grid.RowDefinitions>
-        <Label Content="Deck Manager"/>
-        <ScrollViewer>
+        <Label Content="Deck Manager" Margin="5"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="-5,10,5,10" Grid.Row="1">
 
 
 
-            <StackPanel Name="CardButtonsPanel" Margin="10">
+            <StackPanel Name="CardButtonsPanel">
                 <!-- Buttons will be dynamically added here -->
             </StackPanel>
-            
-            
+
+
         </ScrollViewer>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="2" Margin="10">

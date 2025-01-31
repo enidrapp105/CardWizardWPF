@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace CardWizardWPF
 {
@@ -61,7 +63,70 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred while deleting the card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        public void Load_Deck_From_File()
+        {
+            try
+            {
+                string configPath = Path.Combine(FolderPath, "config.JSON");
+                if (!File.Exists(configPath))
+                {
+                    MessageBox.Show("Deck configuration file not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
+                // Load deck configuration
+                string configContent = File.ReadAllText(configPath);
+                var config = JsonSerializer.Deserialize<Deck>(configContent);
+
+                if (config == null)
+                {
+                    MessageBox.Show("Failed to load deck configuration.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Deckname = config.Deckname;
+                CardWidth = config.CardWidth;
+                CardHeight = config.CardHeight;
+                Attributes = config.Attributes;
+
+                string cardsFolder = Path.Combine(FolderPath, "cards");
+                if (!Directory.Exists(cardsFolder))
+                {
+                    MessageBox.Show("Cards folder not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                Cards = new List<Card>();
+                // Load cards
+                int cardcount = 0;
+                Cards.Clear();
+                foreach (var cardDir in Directory.GetDirectories(cardsFolder))
+                {
+                    string cardInfoPath = Path.Combine(cardDir, "cardinfo.JSON");
+                    if (File.Exists(cardInfoPath))
+                    {
+                        string cardContent = File.ReadAllText(cardInfoPath);
+                        var card = JsonSerializer.Deserialize<Card>(cardContent);
+                        if (card != null)
+                        {
+                            // Load image
+                            string imagePath = Path.Combine(cardDir, "image", "thumbnail.png");
+                            if (File.Exists(imagePath))
+                            {
+                                card.Image = new Image { Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(imagePath)) };
+                            }
+
+                            Cards.Add(card);
+                        }
+                    }
+                    cardcount++;
+                }
+                CardCount = cardcount;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while loading the deck: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         public Card Select_Card(string cardname)
         {

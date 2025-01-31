@@ -133,6 +133,7 @@ namespace CardWizardWPF
         private void Delete_Card(Card card)
         {
             deck.Delete_Card(card);
+            deck.Load_Deck_From_File();
         }
         private void Manager_Back_Button_Click(object sender, RoutedEventArgs e)
         {
@@ -191,7 +192,7 @@ namespace CardWizardWPF
                 deck.Add_Card(card);
 
                 // Update deck configuration
-                UpdateDeckConfiguration(deck);
+                
 
                 MessageBox.Show($"Card '{card.Name}' created successfully in deck '{deck.Deckname}'.", "Card Created");
 

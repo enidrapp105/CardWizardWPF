@@ -297,7 +297,7 @@ namespace CardWizardWPF
                     encoder.Save(fileStream);
                 }
 
-                //MessageBox.Show($"Image saved as {filepath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Image saved as {filepath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
