@@ -24,6 +24,7 @@ namespace CardWizardWPF
     public partial class DeckManagerPage : Page
     {
         public Deck deck;
+        public Card selectedcard;
         public DeckManagerPage(Deck deck)
         {
             this.deck = deck;
@@ -98,7 +99,18 @@ namespace CardWizardWPF
             if (sender is Button button && button.Tag is Card card)
             {
                 MessageBox.Show($"You selected the card: {card.Name}", "Card Selected", MessageBoxButton.OK, MessageBoxImage.Information);
-                // Perform additional actions with the selected card if needed
+                string cardName = button.Content.ToString(); // Extract card name from button
+                string cardPath = Path.Combine(deck.FolderPath, "cards", cardName);
+                Card selectedCard = new Card { FolderPath = cardPath };
+                selectedCard.LoadFromFile();
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.TransitionTo(new CardCreatorState(), selectedCard, this.deck);
+                }
+                else
+                {
+                    MessageBox.Show("Unable to navigate to card creator.", "Error");
+                }
             }
         }
 
@@ -159,7 +171,8 @@ namespace CardWizardWPF
                 string cardsFolderPath = deck.FolderPath + "\\cards";
                 string cardFolderPath = Path.Combine(cardsFolderPath, card.Name);
                 Directory.CreateDirectory(cardFolderPath);
-
+                string assetsFolderPath = Path.Combine(cardFolderPath, "assets");
+                Directory.CreateDirectory(assetsFolderPath);
                 // Create an "image" subfolder
                 string imageFolderPath = Path.Combine(cardFolderPath, "image");
                 Directory.CreateDirectory(imageFolderPath);
@@ -206,28 +219,6 @@ namespace CardWizardWPF
                 }
             }
             
-        }
-
-        private void UpdateDeckConfiguration(Deck deck)
-        {
-            string configPath = Path.Combine(deck.FolderPath, "config.json");
-
-            // Update the deck details
-            var deckInfo = new
-            {
-                Deckname = deck.Deckname,
-                CardWidth = deck.CardWidth,
-                CardHeight = deck.CardHeight,
-                CardCount = deck.Cards.Count,
-                Attributes = deck.Attributes,
-            };
-
-            string jsonContent = System.Text.Json.JsonSerializer.Serialize(deckInfo, new System.Text.Json.JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-
-            File.WriteAllText(configPath, jsonContent);
         }
     }
 }

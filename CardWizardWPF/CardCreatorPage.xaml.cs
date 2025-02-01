@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml;
 using Path = System.IO.Path;
 
 namespace CardWizardWPF
@@ -34,9 +36,9 @@ namespace CardWizardWPF
         {
             this.card = card;
             this.deck = deck;
-            
+
             InitializeComponent();
-            
+
             cardcanvas = new Canvas
             {
                 Name = "cardcanvas",
@@ -51,7 +53,10 @@ namespace CardWizardWPF
             canvasholder.Children.Add(cardcanvas);
             commandBar.Children.Add(CreateTextButton());
             commandBar.Children.Add(CreateImageButton());
+
+            CheckAndReconstructCanvas();
         }
+
 
         // Initialize the points array dynamically
         private void InitializePoints(double canvasWidth, double canvasHeight)
@@ -296,7 +301,7 @@ namespace CardWizardWPF
                 {
                     encoder.Save(fileStream);
                 }
-
+                save_assets_to_file();
                 MessageBox.Show($"Image saved as {filepath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -304,6 +309,214 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred: {ex.Message}", "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void save_assets_to_file()
+        {
+            try
+            {
+                string cardFolderPath = card.FolderPath;
+                string assetsFolderPath = Path.Combine(cardFolderPath, "assets");
+                string jsonFilePath = Path.Combine(cardFolderPath, "assets.json");
+
+                // Ensure the assets folder exists
+                if (!Directory.Exists(assetsFolderPath))
+                {
+                    Directory.CreateDirectory(assetsFolderPath);
+                }
+
+                List<Dictionary<string, object>> elementsData = new List<Dictionary<string, object>>();
+
+                foreach (UIElement element in cardcanvas.Children)
+                {
+                    if (element is Image image)
+                    {
+                        BitmapImage bitmap = image.Source as BitmapImage;
+                        if (bitmap?.UriSource != null)
+                        {
+                            string imageSource = bitmap.UriSource.LocalPath;
+                            string imageFileName = Path.GetFileName(imageSource);
+                            string newImagePath = Path.Combine(assetsFolderPath, imageFileName);
+
+                            // Copy image to assets folder if it doesn't already exist
+                            if (!File.Exists(newImagePath))
+                            {
+                                File.Copy(imageSource, newImagePath, true);
+                            }
+
+                            elementsData.Add(new Dictionary<string, object>
+                            {
+                                { "Type", "Image" },
+                                { "Source", $"assets/{imageFileName}" },
+                                { "PositionX", Canvas.GetLeft(image) },
+                                { "PositionY", Canvas.GetTop(image) },
+                                { "Width", image.ActualWidth },
+                                { "Height", image.ActualHeight }
+                            });
+                        }
+                    }
+                    else if (element is TextBlock textBlock)
+                    {
+                        elementsData.Add(new Dictionary<string, object>
+                        {
+                            { "Type", "Text" },
+                            { "Content", textBlock.Text },
+                            { "PositionX", Canvas.GetLeft(textBlock) },
+                            { "PositionY", Canvas.GetTop(textBlock) },
+                            { "FontSize", textBlock.FontSize },
+                            { "Color", textBlock.Foreground.ToString() }
+                        });
+                    }
+                }
+
+                // Wrap everything in an object with the "IsPopulated" flag
+                var saveData = new Dictionary<string, object>
+                {
+                    { "IsPopulated", elementsData.Count > 0 }, // Set flag if elements exist
+                    { "Elements", elementsData }
+                };
+
+                // Serialize data to JSON and write to file
+                var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(elementsData, jsonOptions);
+                File.WriteAllText(jsonFilePath, json);
+
+                MessageBox.Show("Card assets saved successfully!", "Save Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving card assets: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void reconstruct_canvas_from_file()
+        {
+            try
+            {
+                string cardFolderPath = card.FolderPath;
+                string jsonFilePath = Path.Combine(cardFolderPath, "assets.json");
+
+                // Check if JSON file exists
+                if (!File.Exists(jsonFilePath))
+                {
+                    return; // No saved data to load
+                }
+
+                // Read JSON content
+                string jsonText = File.ReadAllText(jsonFilePath);
+
+                // Deserialize JSON into a list of CanvasItem objects
+                var canvasItems = JsonSerializer.Deserialize<List<CanvasItem>>(jsonText);
+
+                if (canvasItems == null || canvasItems.Count == 0)
+                {
+                    return; // No valid data to load
+                }
+
+                // Clear the existing canvas
+                cardcanvas.Children.Clear();
+
+                // Iterate over the canvas items and reconstruct them
+                foreach (var item in canvasItems)
+                {
+                    if (item.Type == "Image")
+                    {
+                        string imagePath = Path.Combine(cardFolderPath, item.Source);
+                        if (File.Exists(imagePath))
+                        {
+                            Image image = new Image
+                            {
+                                Source = new BitmapImage(new Uri(imagePath, UriKind.Absolute)),
+                                Width = item.Width,
+                                Height = item.Height
+                            };
+
+                            Canvas.SetLeft(image, item.PositionX);
+                            Canvas.SetTop(image, item.PositionY);
+
+                            cardcanvas.Children.Add(image);
+                        }
+                    }
+                    else if (item.Type == "Text")
+                    {
+                        TextBlock textBlock = new TextBlock
+                        {
+                            Text = item.Content,
+                            FontSize = item.FontSize,
+                            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color))
+                        };
+
+                        Canvas.SetLeft(textBlock, item.PositionX);
+                        Canvas.SetTop(textBlock, item.PositionY);
+
+                        cardcanvas.Children.Add(textBlock);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error reconstructing canvas: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public class CanvasItem
+        {
+            public string Type { get; set; }
+            public string Source { get; set; }
+            public double PositionX { get; set; }
+            public double PositionY { get; set; }
+            public double Width { get; set; }
+            public double Height { get; set; }
+
+            // For "Text" items
+            public string Content { get; set; }
+            public int FontSize { get; set; }
+            public string Color { get; set; }
+        }
+        private void CheckAndReconstructCanvas()
+        {
+            string jsonFilePath = Path.Combine(card.FolderPath, "assets.json");
+
+            if (File.Exists(jsonFilePath))
+            {
+                try
+                {
+                    string jsonText = File.ReadAllText(jsonFilePath);
+
+                    // Deserialize JSON into a list of CanvasItem objects
+                    var canvasItems = JsonSerializer.Deserialize<List<CanvasItem>>(jsonText);
+
+                    if (canvasItems != null)
+                    {
+                        // Now process the canvasItems
+                        foreach (var item in canvasItems)
+                        {
+                            if (item.Type == "Image")
+                            {
+                                // Handle Image items
+                                Console.WriteLine($"Image Source: {item.Source}, Position: ({item.PositionX}, {item.PositionY}), Size: ({item.Width}, {item.Height})");
+                            }
+                            else if (item.Type == "Text")
+                            {
+                                // Handle Text items
+                                Console.WriteLine($"Text Content: {item.Content}, Position: ({item.PositionX}, {item.PositionY}), Font Size: {item.FontSize}, Color: {item.Color}");
+                            }
+                        }
+
+                        // Call your method to reconstruct the canvas
+                        reconstruct_canvas_from_file(); // Load saved data
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    MessageBox.Show($"Error reading card data: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Unexpected error: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
 
         //****************************************************************************
         //
