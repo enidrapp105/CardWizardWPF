@@ -145,6 +145,7 @@ namespace CardWizardWPF
         private void Delete_Card(Card card)
         {
             deck.Delete_Card(card);
+            
             deck.Load_Deck_From_File();
         }
         private void Manager_Back_Button_Click(object sender, RoutedEventArgs e)

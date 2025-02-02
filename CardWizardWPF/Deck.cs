@@ -108,12 +108,6 @@ namespace CardWizardWPF
                         var card = JsonSerializer.Deserialize<Card>(cardContent);
                         if (card != null)
                         {
-                            // Load image
-                            string imagePath = Path.Combine(cardDir, "image", "thumbnail.png");
-                            if (File.Exists(imagePath))
-                            {
-                                card.Image = new Image { Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(imagePath)) };
-                            }
 
                             Cards.Add(card);
                         }

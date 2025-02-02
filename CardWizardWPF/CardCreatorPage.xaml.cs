@@ -429,10 +429,12 @@ namespace CardWizardWPF
                                 Width = item.Width,
                                 Height = item.Height
                             };
-
+                            image.MouseDown += Element_MouseDown;
+                            image.MouseUp += Element_MouseUp;
+                            image.MouseMove += Element_MouseMoved;
                             Canvas.SetLeft(image, item.PositionX);
                             Canvas.SetTop(image, item.PositionY);
-
+                            
                             cardcanvas.Children.Add(image);
                         }
                     }
@@ -444,7 +446,9 @@ namespace CardWizardWPF
                             FontSize = item.FontSize,
                             Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color))
                         };
-
+                        textBlock.MouseDown += Element_MouseDown;
+                        textBlock.MouseUp += Element_MouseUp;
+                        textBlock.MouseMove += Element_MouseMoved;
                         Canvas.SetLeft(textBlock, item.PositionX);
                         Canvas.SetTop(textBlock, item.PositionY);
 

@@ -20,7 +20,47 @@ namespace CardWizardWPF
         public Image Image { get; set; }
         public List<String> Attributes { get; set; }
 
+        
         public void LoadFromFile()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(FolderPath))
+                {
+                    MessageBox.Show("Card folder path is not set.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                string cardInfoPath = Path.Combine(FolderPath, "cardinfo.json");
+
+                if (!File.Exists(cardInfoPath))
+                {
+                    MessageBox.Show($"Card info file not found: {cardInfoPath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Read and deserialize JSON
+                string cardContent = File.ReadAllText(cardInfoPath);
+                var cardData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(cardContent);
+
+                if (cardData != null)
+                {
+                    Name = cardData.ContainsKey("Name") ? cardData["Name"].GetString() : "Unnamed";
+                    Description = cardData.ContainsKey("Description") ? cardData["Description"].GetString() : "";
+                    AmountInDeck = cardData.ContainsKey("AmountInDeck") ? cardData["AmountInDeck"].GetInt32() : 1;
+                    Attributes = cardData.ContainsKey("Attributes")
+                        ? JsonSerializer.Deserialize<List<string>>(cardData["Attributes"].GetRawText())
+                        : new List<string>();
+                }
+
+                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading card from {FolderPath}: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        public void LoadFromFileWithImages()
         {
             try
             {
@@ -67,6 +107,5 @@ namespace CardWizardWPF
                 MessageBox.Show($"Error loading card from {FolderPath}: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
     }
 }

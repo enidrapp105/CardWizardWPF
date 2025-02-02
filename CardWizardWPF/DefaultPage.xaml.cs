@@ -139,10 +139,12 @@ namespace CardWizardWPF
 
                     // Create JSON config file
                     UpdateDeckConfiguration(deck);
+                    
 
                     MessageBox.Show($"Deck '{deckName}' created successfully!", "Deck Created");
-                    LoadDeckButtons();
+                  
                     selected_deck = deck;
+                    LoadDeckList();
                     LoadDeckButtons();
                 }
                 else
