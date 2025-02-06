@@ -16,7 +16,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml;
+using Xceed.Wpf.Toolkit;
+using MessageBox = System.Windows.MessageBox;
 using Path = System.IO.Path;
+using WindowStartupLocation = System.Windows.WindowStartupLocation;
 
 namespace CardWizardWPF
 {
@@ -39,18 +42,24 @@ namespace CardWizardWPF
 
             InitializeComponent();
 
+            Utils util = new Utils();
+
+            // Initialize the Canvas
             cardcanvas = new Canvas
             {
                 Name = "cardcanvas",
-                Height = CmToDeviceIndependentUnits(this.deck.CardHeight),
-                Width = CmToDeviceIndependentUnits(this.deck.CardWidth),
+                Height = util.CmToDeviceIndependentUnits(this.deck.CardHeight),
+                Width = util.CmToDeviceIndependentUnits(this.deck.CardWidth),
                 Background = new SolidColorBrush(Colors.White),
             };
 
             // Initialize points based on cardcanvas size
             InitializePoints(cardcanvas.Width, cardcanvas.Height);
 
+
+
             canvasholder.Children.Add(cardcanvas);
+
             commandBar.Children.Add(CreateTextButton());
             commandBar.Children.Add(CreateImageButton());
 
@@ -142,6 +151,7 @@ namespace CardWizardWPF
                 image.MouseDown += Element_MouseDown;
                 image.MouseMove += Element_MouseMoved;
                 image.MouseUp += Element_MouseUp;
+                image.MouseRightButtonDown += Element_MouseRightButtonDown;
                 // Add the Image control to the Canvas
                 cardcanvas.Children.Add(image);
             }
@@ -211,6 +221,7 @@ namespace CardWizardWPF
                     textBlock.MouseDown += Element_MouseDown;
                     textBlock.MouseMove += Element_MouseMoved;
                     textBlock.MouseUp += Element_MouseUp;
+                    textBlock.MouseRightButtonDown += Element_MouseRightButtonDown;
                     // Add the TextBlock to the Canvas
                     cardcanvas.Children.Add(textBlock);
                 }
@@ -239,20 +250,7 @@ namespace CardWizardWPF
                 MessageBox.Show("Unable to navigate back.", "Error");
             }
         }
-        //**********************************************************
-        // Function name: CmToDeviceIndependentUnits
-        //
-        // Purpose: converts centimeters to device independent units
-        // 
-        // Parameters: centimeters in float form
-        //
-        // Returns: device independent units
-        private double CmToDeviceIndependentUnits(double cm)
-        {
-            const double cmPerInch = 2.54;
-            const double dpi = 96.0; // WPF uses 96 DPI for device-independent units
-            return cm * (dpi / cmPerInch);
-        }
+        
         //**********************************************************
         // Function name: Creator_Save_Card_Button_Click
         //
@@ -423,15 +421,22 @@ namespace CardWizardWPF
                         string imagePath = Path.Combine(cardFolderPath, item.Source);
                         if (File.Exists(imagePath))
                         {
+                            BitmapImage bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad; // Ensures file is not locked
+                            bitmap.EndInit();
+
                             Image image = new Image
                             {
-                                Source = new BitmapImage(new Uri(imagePath, UriKind.Absolute)),
+                                Source = bitmap,
                                 Width = item.Width,
                                 Height = item.Height
                             };
                             image.MouseDown += Element_MouseDown;
                             image.MouseUp += Element_MouseUp;
                             image.MouseMove += Element_MouseMoved;
+                            image.MouseRightButtonDown += Element_MouseRightButtonDown;
                             Canvas.SetLeft(image, item.PositionX);
                             Canvas.SetTop(image, item.PositionY);
                             
@@ -449,6 +454,7 @@ namespace CardWizardWPF
                         textBlock.MouseDown += Element_MouseDown;
                         textBlock.MouseUp += Element_MouseUp;
                         textBlock.MouseMove += Element_MouseMoved;
+                        textBlock.MouseRightButtonDown += Element_MouseRightButtonDown;
                         Canvas.SetLeft(textBlock, item.PositionX);
                         Canvas.SetTop(textBlock, item.PositionY);
 
@@ -491,21 +497,7 @@ namespace CardWizardWPF
 
                     if (canvasItems != null)
                     {
-                        // Now process the canvasItems
-                        foreach (var item in canvasItems)
-                        {
-                            if (item.Type == "Image")
-                            {
-                                // Handle Image items
-                                Console.WriteLine($"Image Source: {item.Source}, Position: ({item.PositionX}, {item.PositionY}), Size: ({item.Width}, {item.Height})");
-                            }
-                            else if (item.Type == "Text")
-                            {
-                                // Handle Text items
-                                Console.WriteLine($"Text Content: {item.Content}, Position: ({item.PositionX}, {item.PositionY}), Font Size: {item.FontSize}, Color: {item.Color}");
-                            }
-                        }
-
+                        
                         // Call your method to reconstruct the canvas
                         reconstruct_canvas_from_file(); // Load saved data
                     }
@@ -576,6 +568,129 @@ namespace CardWizardWPF
                 element.ReleaseMouseCapture();
             }
         }
+        private void Element_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is UIElement element)
+            {
+                // Create the context menu
+                ContextMenu rightClickMenu = new ContextMenu();
+
+                // Check the type of the element
+                if (element is Image)
+                {
+                    // Add options specific to an Image
+                    MenuItem resizeOption = new MenuItem { Header = "Resize" };
+                    resizeOption.Click += (s, args) => ResizeImage(element as Image);
+
+                    MenuItem rotateOption = new MenuItem { Header = "Rotate" };
+                    rotateOption.Click += (s, args) => RotateElement(element as Image);
+
+                    MenuItem removeOption = new MenuItem { Header = "Remove" };
+                    removeOption.Click += (s, args) => RemoveElement(element);
+
+                    rightClickMenu.Items.Add(resizeOption);
+                    rightClickMenu.Items.Add(rotateOption);
+                    rightClickMenu.Items.Add(removeOption);
+                }
+                else if (element is TextBlock textBlock)
+                {
+                    // Add options specific to a TextBlock
+                    MenuItem fontOption = new MenuItem { Header = "Change Font" };
+                    fontOption.Click += (s, args) => ChangeFont(textBlock);
+
+                    // TextBox inside the context menu
+                    TextBox textChange = new TextBox
+                    {
+                        Width = 100,
+                        Text = textBlock.Text
+                    };
+
+                    textChange.TextChanged += (s, args) =>
+                    {
+                        textBlock.Text = textChange.Text; // Update text block in real-time
+                    };
+
+                    MenuItem textChangeItem = new MenuItem();
+                    textChangeItem.Header = textChange;
+
+                    // Create the ColorPicker for changing text color
+                    ColorPicker colorSlider = new ColorPicker
+                    {
+                        Width = 50,
+                        Height = 50,
+                        SelectedColor = ((SolidColorBrush)textBlock.Foreground).Color
+                    };
+
+                    colorSlider.SelectedColorChanged += (s, args) =>
+                    {
+                        if (colorSlider.SelectedColor.HasValue)
+                        {
+                            textBlock.Foreground = new SolidColorBrush(colorSlider.SelectedColor.Value);
+                        }
+                    };
+
+                    // Remove option
+                    MenuItem removeOption = new MenuItem { Header = "Remove" };
+                    removeOption.Click += (s, args) => RemoveElement(textBlock);
+
+                    // Add items to the context menu
+                    rightClickMenu.Items.Add(fontOption);
+                    rightClickMenu.Items.Add(textChangeItem); // Add the text change option
+                    rightClickMenu.Items.Add(colorSlider);
+                    rightClickMenu.Items.Add(removeOption);
+                }
+
+                // Show the context menu at the mouse position
+                rightClickMenu.PlacementTarget = element;
+                rightClickMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+                rightClickMenu.IsOpen = true;
+
+                // Prevent further propagation of the event
+                e.Handled = true;
+            }
+        }
+
+
+
+        private void ResizeImage(Image image)
+        {
+            if (image != null)
+            {
+                // Example: Open a dialog or resize directly
+                image.Width *= 1.2; // Increase width by 20%
+                image.Height *= 1.2; // Increase height by 20%
+            }
+        }
+        private void RotateElement(UIElement element)
+        {
+            if (element != null)
+            {
+                RotateTransform rotateTransform = element.RenderTransform as RotateTransform ?? new RotateTransform();
+                rotateTransform.Angle += 45; // Rotate by 45 degrees
+                element.RenderTransform = rotateTransform;
+            }
+        }
+
+        private void RemoveElement(UIElement element)
+        {
+            if (cardcanvas != null && element != null)
+            {
+                cardcanvas.Children.Remove(element);
+            }
+        }
+
+
+        private void ChangeFont(TextBlock textBlock)
+        {
+            if (textBlock != null)
+            {
+                textBlock.FontSize = 20; // Example: Change font size
+                textBlock.FontWeight = FontWeights.Bold; // Example: Change font weight
+            }
+        }
+
+        
+        
 
     }
 }

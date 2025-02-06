@@ -93,7 +93,7 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred while loading card buttons: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
+        
         private void CardButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is Card card)
@@ -113,7 +113,17 @@ namespace CardWizardWPF
                 }
             }
         }
-
+        private void TemplateButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.TransitionTo(new TemplateCreatorState(), null, this.deck);
+            }
+            else
+            {
+                MessageBox.Show("Unable to navigate to template creator.", "Error");
+            }
+        }
         private void Manager_Delete_Card_Click(object sender, RoutedEventArgs e)
         {
             try

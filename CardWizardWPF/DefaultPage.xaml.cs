@@ -136,6 +136,7 @@ namespace CardWizardWPF
                     Directory.CreateDirectory(deck.FolderPath);
                     Directory.CreateDirectory(Path.Combine(deck.FolderPath, "cards"));
                     Directory.CreateDirectory(Path.Combine(deck.FolderPath, "rules"));
+                    Directory.CreateDirectory(Path.Combine(deck.FolderPath, "templates"));
 
                     // Create JSON config file
                     UpdateDeckConfiguration(deck);
