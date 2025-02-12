@@ -1,8 +1,10 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,6 +17,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Xceed.Wpf.Toolkit;
 using MessageBox = System.Windows.MessageBox;
+using Path = System.IO.Path;
 using WindowStartupLocation = System.Windows.WindowStartupLocation;
 
 namespace CardWizardWPF
@@ -44,13 +47,131 @@ namespace CardWizardWPF
                 Background = new SolidColorBrush(Colors.White),
             };
 
+
+            commandBar.Children.Add(CreateTextButton());
+            commandBar.Children.Add(CreateImageButton());
+            commandBar.Children.Add(CreateBorderButton());
+
             canvasholder.Children.Add(templatecanvas);
         }
 
         private void Template_Save_Button_Click(object sender, RoutedEventArgs e)
         {
+            Window nameprompt = new Window
+            {
+                Title = "Template Name?",
+                Width = 300,
+                Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+            StackPanel inputpromptpanel = new StackPanel();
+            Label label = new Label
+            {
+                Content = "Name:"
+            };
+            TextBox textprompt = new TextBox
+            { 
+                Width = 200
+            };
+            Button submitbutton = new Button
+            { 
+                Content = "Submit",
+                Width = 200
+              
+            };
+            submitbutton.Click += (s, args) =>
+            {
+                if (!string.IsNullOrWhiteSpace(textprompt.Text))
+                {
+                    string folderpath = deck.FolderPath;
+                    string templatesfolderpath = Path.Combine(folderpath, "templates");
+                    string templatedirectory = Path.Combine(templatesfolderpath, textprompt.Text);
+                    string templateassetsfolder = Path.Combine(templatedirectory, "assets");
+                    string templateinfo = Path.Combine(templatedirectory, "templateinfo.json");
+
+                    if (!Directory.Exists(templatesfolderpath))
+                    {
+                        Directory.CreateDirectory(templatesfolderpath);
+                    }
+                    if (!Directory.Exists(templatedirectory))
+                    {
+                        Directory.CreateDirectory(templatedirectory);
+                    }
+                    if (!Directory.Exists(templateassetsfolder))
+                    {
+                        Directory.CreateDirectory(templateassetsfolder);
+                    }
+                    List<Dictionary<string, object>> elementsData = new List<Dictionary<string, object>>();
+
+                    foreach (UIElement element in templatecanvas.Children)
+                    {
+                        if (element is Image image)
+                        {
+                            BitmapImage bitmap = image.Source as BitmapImage;
+                            if (bitmap?.UriSource != null)
+                            {
+                                string imageSource = bitmap.UriSource.LocalPath;
+                                string imageFileName = Path.GetFileName(imageSource);
+                                string newImagePath = Path.Combine(templateassetsfolder, imageFileName);
+
+                                // Copy image to assets folder if it doesn't already exist
+                                if (!File.Exists(newImagePath))
+                                {
+                                    File.Copy(imageSource, newImagePath, true);
+                                }
+
+                                elementsData.Add(new Dictionary<string, object>
+                                {
+                                    { "Type", "Image" },
+                                    { "Source", $"assets/{imageFileName}" },
+                                    { "PositionX", Canvas.GetLeft(image) },
+                                    { "PositionY", Canvas.GetTop(image) },
+                                    { "Width", image.ActualWidth },
+                                    { "Height", image.ActualHeight }
+                                });
+                            }
+                        }
+                        else if (element is TextBlock textBlock)
+                        {
+                            elementsData.Add(new Dictionary<string, object>
+                            {
+                                { "Type", "Text" },
+                                { "Content", textBlock.Text },
+                                { "PositionX", Canvas.GetLeft(textBlock) },
+                                { "PositionY", Canvas.GetTop(textBlock) },
+                                { "FontSize", textBlock.FontSize },
+                                { "Color", textBlock.Foreground.ToString() }
+                            });
+                        }
+                        else if (element is Rectangle rectangle)
+                        {
+                            elementsData.Add(new Dictionary<string, object>
+                            {
+                                { "Type", "Rectangle" },
+                                { "PositionX", util.GetCanvasPosition(rectangle, Canvas.LeftProperty) },
+                                { "PositionY", util.GetCanvasPosition(rectangle, Canvas.RightProperty) },
+                                { "Color", rectangle.Stroke.ToString() },
+                                { "Width", rectangle.ActualWidth },
+                                { "Height", rectangle.ActualHeight }
+                            });
+                        }
+                    }
+                    var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+                    string json = JsonSerializer.Serialize(elementsData, jsonOptions);
+                    File.WriteAllText(templateinfo, json);
+                }
+                nameprompt.Close();
+            };
+
+            inputpromptpanel.Children.Add(label);
+            inputpromptpanel.Children.Add(textprompt);
+            inputpromptpanel.Children.Add(submitbutton);
+            nameprompt.Content = inputpromptpanel;
+            // Show the input dialog
+            nameprompt.ShowDialog();
 
         }
+
         private void Template_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)
@@ -81,6 +202,26 @@ namespace CardWizardWPF
             };
             addtextbutton.Click += TextButton_Click;
             return addtextbutton;
+        }
+        private Button CreateBorderButton()
+        {
+            Button borderbutton = new Button
+            {
+                Content = "Border",
+            };
+            borderbutton.Click += BorderButton_Click;
+            return borderbutton;
+        }
+        private void BorderButton_Click(object sender, RoutedEventArgs e)
+        {
+            Rectangle borderrectangle = new Rectangle
+            {
+                Width = templatecanvas.ActualWidth,
+                Height = templatecanvas.ActualHeight,
+                Stroke = Brushes.Black,
+                StrokeThickness = 3
+            };
+            templatecanvas.Children.Add(borderrectangle);
         }
         private void ImageButton_Click(object sender, RoutedEventArgs e)
         {

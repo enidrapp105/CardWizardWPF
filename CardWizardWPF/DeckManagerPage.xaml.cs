@@ -33,6 +33,7 @@ namespace CardWizardWPF
             Manager_Load_Card_Buttons();
 
         }
+
         private void Manager_Load_Card_Buttons()
         {
             try

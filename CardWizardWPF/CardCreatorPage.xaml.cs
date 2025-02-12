@@ -62,6 +62,7 @@ namespace CardWizardWPF
 
             commandBar.Children.Add(CreateTextButton());
             commandBar.Children.Add(CreateImageButton());
+            commandBar.Children.Add(CreateTemplateDropdown());
 
             CheckAndReconstructCanvas();
         }
@@ -96,6 +97,38 @@ namespace CardWizardWPF
             };
             addtextbutton.Click += TextButton_Click;
             return addtextbutton;
+        }
+        private ComboBox CreateTemplateDropdown()
+        {
+            string templatesdirectory = Path.Combine(deck.FolderPath, "templates");
+            List<string> subDirectories = new List<string>();
+            ComboBox templatebutton = new ComboBox
+            {
+                Text = "Templates"
+            };
+
+            if (Directory.Exists(templatesdirectory))
+            {
+                subDirectories.AddRange(Directory.GetDirectories(templatesdirectory));
+
+                // Convert full paths to just directory names
+                for (int i = 0; i < subDirectories.Count; i++)
+                {
+                    subDirectories[i] = Path.GetFileName(subDirectories[i]);
+                }
+
+               
+            }
+            foreach (string subdir in subDirectories)
+            {
+                ComboBoxItem template = new ComboBoxItem
+                {
+                    Content = subdir,
+                };
+                templatebutton.Items.Add(template);
+            }
+
+            return templatebutton;
         }
         //**********************************************************
         private void ImageButton_Click(object sender, RoutedEventArgs e)
@@ -482,6 +515,7 @@ namespace CardWizardWPF
             public int FontSize { get; set; }
             public string Color { get; set; }
         }
+        
         private void CheckAndReconstructCanvas()
         {
             string jsonFilePath = Path.Combine(card.FolderPath, "assets.json");
