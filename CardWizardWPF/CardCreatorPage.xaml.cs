@@ -17,6 +17,10 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml;
 using Xceed.Wpf.Toolkit;
+using Xceed.Wpf.Toolkit.Primitives;
+using static System.Net.Mime.MediaTypeNames;
+using Application = System.Windows.Application;
+using Image = System.Windows.Controls.Image;
 using MessageBox = System.Windows.MessageBox;
 using Path = System.IO.Path;
 using WindowStartupLocation = System.Windows.WindowStartupLocation;
@@ -125,10 +129,141 @@ namespace CardWizardWPF
                 {
                     Content = subdir,
                 };
+                
                 templatebutton.Items.Add(template);
             }
-
+            templatebutton.SelectionChanged += Templatebutton_SelectionChanged;
             return templatebutton;
+        }
+
+        private void Templatebutton_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                Button existingButton = commandBar.Children
+            .OfType<Button>()
+            .FirstOrDefault(b => b.Name == "templateButton");
+
+                if (existingButton == null)
+                {
+                    Button button = new Button
+                    {
+                        Name = "templateButton",
+                        Content = "Apply template",
+                        Tag = comboBox
+                    };
+                    button.Click += TemplateButton_Click;
+                    commandBar.Children.Add(button);
+                }
+
+                
+
+
+            }
+        }
+        private void TemplateButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is ComboBox comboBox)
+            {
+                if (comboBox.SelectedItem is ComboBoxItem selectedItem)
+                {
+                    string selectedTemplate = selectedItem.Content.ToString();
+                    string templatePath = Path.Combine(deck.FolderPath, $"templates/{selectedTemplate}");
+                    string templateInfoPath = Path.Combine(templatePath, "templateinfo.json");
+                    string assetsPath = Path.Combine(templatePath, "assets");
+
+                    try
+                    {
+                        
+
+                        // Check if JSON file exists
+                        if (!File.Exists(templateInfoPath))
+                        {
+                            return; // No saved data to load
+                        }
+
+                        // Read JSON content
+                        string jsonText = File.ReadAllText(templateInfoPath);
+
+                        // Deserialize JSON into a list of CanvasItem objects
+                        var canvasItems = JsonSerializer.Deserialize<List<CanvasItem>>(jsonText);
+
+                        if (canvasItems == null || canvasItems.Count == 0)
+                        {
+                            return; // No valid data to load
+                        }
+
+                        // Clear the existing canvas
+                        cardcanvas.Children.Clear();
+
+                        // Iterate over the canvas items and reconstruct them
+                        foreach (var item in canvasItems)
+                        {
+                            if (item.Type == "Image")
+                            {
+                                string imagePath = Path.Combine(templatePath, item.Source);
+                                if (File.Exists(imagePath))
+                                {
+                                    BitmapImage bitmap = new BitmapImage();
+                                    bitmap.BeginInit();
+                                    bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                                    bitmap.CacheOption = BitmapCacheOption.OnLoad; // Ensures file is not locked
+                                    bitmap.EndInit();
+
+                                    Image image = new Image
+                                    {
+                                        Source = bitmap,
+                                        Width = item.Width,
+                                        Height = item.Height
+                                    };
+                                    image.MouseDown += Element_MouseDown;
+                                    image.MouseUp += Element_MouseUp;
+                                    image.MouseMove += Element_MouseMoved;
+                                    image.MouseRightButtonDown += Element_MouseRightButtonDown;
+                                    Canvas.SetLeft(image, item.PositionX);
+                                    Canvas.SetTop(image, item.PositionY);
+
+                                    cardcanvas.Children.Add(image);
+                                }
+                            }
+                            else if (item.Type == "Text")
+                            {
+                                TextBlock textBlock = new TextBlock
+                                {
+                                    Text = item.Content,
+                                    FontSize = item.FontSize,
+                                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color))
+                                };
+                                textBlock.MouseDown += Element_MouseDown;
+                                textBlock.MouseUp += Element_MouseUp;
+                                textBlock.MouseMove += Element_MouseMoved;
+                                textBlock.MouseRightButtonDown += Element_MouseRightButtonDown;
+                                Canvas.SetLeft(textBlock, item.PositionX);
+                                Canvas.SetTop(textBlock, item.PositionY);
+
+                                cardcanvas.Children.Add(textBlock);
+                            }
+                            else if (item.Type == "Rectangle")
+                            {
+                                Rectangle rectangle = new Rectangle
+                                {
+                                    Width = item.Width,
+                                    Height = item.Height,
+                                    Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color)),
+                                    StrokeThickness = item.StrokeWidth
+                                };
+                                Canvas.SetLeft(rectangle, item.PositionX);
+                                Canvas.SetTop(rectangle, item.PositionY);
+                                cardcanvas.Children.Add(rectangle);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error reconstructing canvas: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
         }
         //**********************************************************
         private void ImageButton_Click(object sender, RoutedEventArgs e)
@@ -514,6 +649,7 @@ namespace CardWizardWPF
             public string Content { get; set; }
             public int FontSize { get; set; }
             public string Color { get; set; }
+            public int StrokeWidth { get; set; }
         }
         
         private void CheckAndReconstructCanvas()

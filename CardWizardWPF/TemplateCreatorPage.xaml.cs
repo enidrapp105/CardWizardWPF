@@ -152,7 +152,8 @@ namespace CardWizardWPF
                                 { "PositionY", util.GetCanvasPosition(rectangle, Canvas.RightProperty) },
                                 { "Color", rectangle.Stroke.ToString() },
                                 { "Width", rectangle.ActualWidth },
-                                { "Height", rectangle.ActualHeight }
+                                { "Height", rectangle.ActualHeight },
+                                { "StrokeWidth", rectangle.StrokeThickness }
                             });
                         }
                     }
