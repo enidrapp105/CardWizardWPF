@@ -193,8 +193,6 @@ namespace CardWizardWPF
                             return; // No valid data to load
                         }
 
-                        // Clear the existing canvas
-                        cardcanvas.Children.Clear();
 
                         // Iterate over the canvas items and reconstruct them
                         foreach (var item in canvasItems)

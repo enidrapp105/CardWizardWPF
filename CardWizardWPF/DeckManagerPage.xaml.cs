@@ -13,7 +13,11 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Win32;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
 using Path = System.IO.Path;
+using System.Reflection.Metadata;
 
 
 namespace CardWizardWPF
@@ -231,6 +235,51 @@ namespace CardWizardWPF
                 }
             }
             
+        }
+        private void Manager_Create_PDF_Button_Click(object sender, RoutedEventArgs e)
+        {
+            string pdfPath = GetSaveFilePath();
+            if (string.IsNullOrEmpty(pdfPath))
+            {
+                MessageBox.Show("No file selected. PDF generation canceled.");
+                return;
+            }
+
+            string imagePath = Path.Combine(deck.Cards[0].FolderPath, "image", "thumbnail.png");
+
+            try
+            {
+                PdfDocument pdfDocument = new PdfDocument();
+                PdfPage page = pdfDocument.AddPage();
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+                XImage img = XImage.FromFile(imagePath);
+                gfx.DrawImage(img, 50, 50, img.PixelWidth / 2, img.PixelHeight / 2);
+                pdfDocument.Save(pdfPath);
+                pdfDocument.Close();
+
+                MessageBox.Show($"PDF saved successfully at:\n{pdfPath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error creating PDF: " + ex.Message);
+            }
+        }
+
+        private string GetSaveFilePath()
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Title = "Save PDF File",
+                Filter = "PDF Files (*.pdf)|*.pdf",
+                DefaultExt = "pdf",
+                FileName = "output.pdf"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                return saveFileDialog.FileName;
+            }
+            return null;
         }
     }
 }
