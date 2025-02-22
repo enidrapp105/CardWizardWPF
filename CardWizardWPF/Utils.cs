@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace CardWizardWPF
 {
-    internal class Utils
+    public class Utils
     {
         //**********************************************************
         // Function name: CmToDeviceIndependentUnits

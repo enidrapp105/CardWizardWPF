@@ -34,6 +34,7 @@ namespace CardWizardWPF
     {
         public Card card;
         public Deck deck;
+        public Utils util;
         Canvas cardcanvas;
         private bool isImageDragging = false;
         private double imageOffsetX, imageOffsetY;
@@ -46,7 +47,7 @@ namespace CardWizardWPF
 
             InitializeComponent();
 
-            Utils util = new Utils();
+            this.util = new Utils();
 
             // Initialize the Canvas
             cardcanvas = new Canvas
@@ -466,7 +467,15 @@ namespace CardWizardWPF
                     encoder.Save(fileStream);
                 }
                 save_assets_to_file();
-                MessageBox.Show($"Image saved as {filepath}", "Save Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Card saved successfully!", "Save Success", MessageBoxButton.OK);
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.TransitionTo(new DeckManagerState(), null, deck);
+                }
+                else
+                {
+                    MessageBox.Show("Unable to navigate back.", "Error");
+                }
             }
             catch (Exception ex)
             {
@@ -530,6 +539,20 @@ namespace CardWizardWPF
                             { "Color", textBlock.Foreground.ToString() }
                         });
                     }
+                    else if (element is Rectangle rectangle)
+                    {
+                        elementsData.Add(new Dictionary<string, object>
+                        {
+                            { "Type", "Rectangle" },
+                            { "PositionX", util.GetCanvasPosition(rectangle, Canvas.LeftProperty) },
+                            { "PositionY", util.GetCanvasPosition(rectangle, Canvas.RightProperty) },
+                            { "Color", rectangle.Stroke.ToString() },
+                            { "Width", rectangle.ActualWidth },
+                            { "Height", rectangle.ActualHeight },
+                            { "StrokeWidth", rectangle.StrokeThickness }
+
+                        });
+                    }
                 }
 
                 // Wrap everything in an object with the "IsPopulated" flag
@@ -544,7 +567,7 @@ namespace CardWizardWPF
                 string json = JsonSerializer.Serialize(elementsData, jsonOptions);
                 File.WriteAllText(jsonFilePath, json);
 
-                MessageBox.Show("Card assets saved successfully!", "Save Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
             }
             catch (Exception ex)
             {
@@ -626,6 +649,20 @@ namespace CardWizardWPF
 
                         cardcanvas.Children.Add(textBlock);
                     }
+                    else if (item.Type == "Rectangle")
+                    {
+                        Rectangle rectangle = new Rectangle
+                        {
+                            Width = item.Width,
+                            Height = item.Height,
+                            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color)),
+                            StrokeThickness = item.StrokeWidth
+                        };
+                        Canvas.SetLeft(rectangle, item.PositionX);
+                        Canvas.SetTop(rectangle, item.PositionY);
+                        cardcanvas.Children.Add(rectangle);
+                    }
+
                 }
             }
             catch (Exception ex)

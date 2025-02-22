@@ -103,7 +103,7 @@ namespace CardWizardWPF
         {
             if (sender is Button button && button.Tag is Card card)
             {
-                MessageBox.Show($"You selected the card: {card.Name}", "Card Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"You selected the card: {card.Name}", "Card Selected", MessageBoxButton.OK, MessageBoxImage.Information);
                 string cardName = button.Content.ToString(); // Extract card name from button
                 string cardPath = Path.Combine(deck.FolderPath, "cards", cardName);
                 Card selectedCard = new Card { FolderPath = cardPath };
@@ -245,15 +245,95 @@ namespace CardWizardWPF
                 return;
             }
 
-            string imagePath = Path.Combine(deck.Cards[0].FolderPath, "image", "thumbnail.png");
+            List<string> imagePaths = new List<string>();
+
+            // Collect valid image paths
+            foreach (var card in deck.Cards)
+            {
+                string imagePath = Path.Combine(card.FolderPath, "image", "thumbnail.png");
+                if (File.Exists(imagePath))
+                {
+                    imagePaths.Add(imagePath);
+                }
+            }
+
+            if (imagePaths.Count == 0)
+            {
+                MessageBox.Show("No valid images found. PDF generation canceled.");
+                return;
+            }
 
             try
             {
                 PdfDocument pdfDocument = new PdfDocument();
-                PdfPage page = pdfDocument.AddPage();
-                XGraphics gfx = XGraphics.FromPdfPage(page);
-                XImage img = XImage.FromFile(imagePath);
-                gfx.DrawImage(img, 50, 50, img.PixelWidth / 2, img.PixelHeight / 2);
+                PdfPage page = null;
+                XGraphics gfx = null;
+
+                double margin = 10; // Reduced margin to minimize space wastage
+                double spacing = 0;  // Minimal spacing between images
+                double maxWidthPerImage = 180;  // Maximum width per image
+                double maxHeightPerImage = 180; // Maximum height per image
+
+                double pageWidth = XUnit.FromPoint(595).Point - (2 * margin); // A4 width minus margins
+                double pageHeight = XUnit.FromPoint(842).Point - (2 * margin); // A4 height minus margins
+
+                double x = margin;
+                double y = margin;
+                double maxRowHeight = 0;
+                int imagesOnPage = 0;
+
+                for (int i = 0; i < imagePaths.Count; i++)
+                {
+                    if (imagesOnPage == 0 || page == null)
+                    {
+                        // Create a new page if needed
+                        page = pdfDocument.AddPage();
+                        gfx = XGraphics.FromPdfPage(page);
+                        x = margin;
+                        y = margin;
+                        maxRowHeight = 0;
+                        imagesOnPage = 0;
+                    }
+
+                    XImage img = XImage.FromFile(imagePaths[i]);
+
+                    // Maintain aspect ratio
+                    double aspectRatio = (double)img.PixelWidth / img.PixelHeight;
+                    double drawWidth = maxWidthPerImage;
+                    double drawHeight = maxHeightPerImage;
+
+                    if (aspectRatio > 1) // Landscape
+                    {
+                        drawHeight = maxWidthPerImage / aspectRatio;
+                    }
+                    else // Portrait
+                    {
+                        drawWidth = maxHeightPerImage * aspectRatio;
+                    }
+
+                    // Move to the next row if the image doesn't fit
+                    if (x + drawWidth > pageWidth)
+                    {
+                        x = margin;
+                        y += maxRowHeight + spacing;
+                        maxRowHeight = 0;
+                    }
+
+                    // Draw the image
+                    gfx.DrawImage(img, x, y, drawWidth, drawHeight);
+
+                    // Update positioning
+                    x += drawWidth + spacing;
+                    maxRowHeight = Math.Max(maxRowHeight, drawHeight);
+                    imagesOnPage++;
+
+                    // Move to a new page if needed
+                    if (y + maxRowHeight > pageHeight)
+                    {
+                        page = null; // Forces a new page in the next loop
+                    }
+                }
+
                 pdfDocument.Save(pdfPath);
                 pdfDocument.Close();
 
@@ -264,6 +344,8 @@ namespace CardWizardWPF
                 MessageBox.Show("Error creating PDF: " + ex.Message);
             }
         }
+
+
 
         private string GetSaveFilePath()
         {
