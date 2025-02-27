@@ -74,7 +74,14 @@ namespace CardWizardWPF
                         Padding = new Thickness(10)
                     };
                     cardButton.Click += CardButton_Click;
-
+                    Button plusButton = new Button
+                    {
+                        Content = $"{card.AmountInDeck}+",
+                        Tag = card,
+                        Padding = new Thickness(5),
+                        Margin = new Thickness(10)
+                    };
+                    plusButton.Click += CardPlusButton_Click;
                     // Create the delete button for the card
                     Button deleteButton = new Button
                     {
@@ -86,7 +93,9 @@ namespace CardWizardWPF
                     deleteButton.Click += Manager_Delete_Card_Click;
 
                     // Add buttons to the stack panel
+                    
                     cardButtonPanel.Children.Add(cardButton);
+                    cardButtonPanel.Children.Add(plusButton);
                     cardButtonPanel.Children.Add(deleteButton);
 
                     // Add the stack panel to the parent container
@@ -98,7 +107,16 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred while loading card buttons: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        
+        private void CardPlusButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is Card card)
+            {
+                card.AmountInDeck += 1;
+                card.SaveAttributetoFile(card.AmountInDeck, "AmountInDeck");
+                Manager_Load_Card_Buttons();
+            }
+
+        }
         private void CardButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is Card card)

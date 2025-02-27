@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Xml;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CardWizardWPF
 {
@@ -17,10 +20,53 @@ namespace CardWizardWPF
         public string Description { get; set; }
         public string FolderPath { get; set; }
         public int AmountInDeck { get; set; }
+        [JsonIgnore]
         public Image Image { get; set; }
         public List<String> Attributes { get; set; }
 
-        
+        public void SaveAttributetoFile(int num, string type)
+        {
+            string jsonFilePath = Path.Combine(FolderPath, "cardinfo.json");
+
+            if (!File.Exists(jsonFilePath))
+            {
+                Console.WriteLine("File not found: " + jsonFilePath);
+                return;
+            }
+
+            try
+            {
+                // Read existing JSON data
+                string json = File.ReadAllText(jsonFilePath);
+                Card? card = JsonSerializer.Deserialize<Card>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (card == null)
+                {
+                    Console.WriteLine("Failed to deserialize JSON.");
+                    return;
+                }
+
+                // Update the attribute
+                switch (type)
+                {
+                    case "AmountInDeck":
+                        card.AmountInDeck = num;
+                        break;
+                    default:
+                        Console.WriteLine("Invalid attribute type.");
+                        return;
+                }
+
+                // Serialize and write back to file
+                string updatedJson = JsonSerializer.Serialize(card, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(jsonFilePath, updatedJson);
+                Console.WriteLine("Card attributes updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error updating JSON: " + ex.Message);
+            }
+        }
         public void LoadFromFile()
         {
             try

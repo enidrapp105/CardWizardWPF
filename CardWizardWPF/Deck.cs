@@ -27,7 +27,13 @@ namespace CardWizardWPF
         {
             Cards.Add(card);
         }
-
+        public void Load_Card_images()
+        {
+            foreach(Card card in Cards)
+            {
+                card.LoadFromFileWithImages();
+            }
+        }
         public void Delete_Card(Card card)
         {
             try

@@ -22,10 +22,15 @@
 
         <Label Content="Deck Tester"/>
 
+        <Grid Grid.Row="1">
+            <Canvas x:Name="field" Background="LightGray"/>
+        </Grid>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="2" Margin="10">
             <Button Content="Back" Width="200" Margin="5" Click="Tester_Back_Button_Click"/>
+            <Button x:Name="deckzone" Content="Deck" Width="100" Margin="5" PreviewMouseDown="testerdeck_mouseddown"/>
+            <Button x:Name="discardzone" Content="Discard" Width="100" Margin="5"/>
         </StackPanel>
-        
-        
+
+
     </Grid>
 </Page>
