@@ -7,29 +7,30 @@ namespace CardWizardWPF
 {
     public partial class HandWindow : Window
     {
-        private List<Image> handCards;
-        public delegate void CardActionHandler(Image card, string action);
+        private List<SearchableImage> handCards;
+        public delegate void CardActionHandler(SearchableImage card, string action);
         public event CardActionHandler CardActionRequested;
 
-        public HandWindow(List<Image> hand)
+        public HandWindow(List<SearchableImage> hand)
         {
             InitializeComponent();
             handCards = hand;
             PopulateHand();
         }
 
-        public void UpdateHand()
+        public void UpdateHand(List<SearchableImage> cards)
         {
+            handCards = cards;
             PopulateHand(); // Refreshes the hand UI
         }
 
-        private void HandleCardMove(Image card, string action)
+        private void HandleCardMove(SearchableImage card, string action)
         {
             if (handCards.Contains(card))
             {
                 handCards.Remove(card); // Remove from hand
                 CardActionRequested?.Invoke(card, action); // Invoke action
-                UpdateHand(); // Refresh the UI
+                UpdateHand(handCards); // Refresh the UI
             }
         }
 
@@ -38,14 +39,14 @@ namespace CardWizardWPF
         {
             HandPanel.Children.Clear();
 
-            foreach (var card in new List<Image>(handCards)) // Create a copy to prevent modification issues
+            foreach (var card in new List<SearchableImage>(handCards)) // Create a copy to prevent modification issues
             {
                 Image cardCopy = new Image
                 {
-                    Source = card.Source,
+                    Source = card.image.Source,
                     Width = 100,
                     Height = 150,
-                    Margin = new Thickness(5)
+                    Margin = new Thickness(5),
                 };
 
                 // Create Context Menu

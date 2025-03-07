@@ -268,10 +268,13 @@ namespace CardWizardWPF
             // Collect valid image paths
             foreach (var card in deck.Cards)
             {
-                string imagePath = Path.Combine(card.FolderPath, "image", "thumbnail.png");
-                if (File.Exists(imagePath))
+                for (int i = 0; i < card.AmountInDeck; i++)
                 {
-                    imagePaths.Add(imagePath);
+                    string imagePath = Path.Combine(card.FolderPath, "image", "thumbnail.png");
+                    if (File.Exists(imagePath))
+                    {
+                        imagePaths.Add(imagePath);
+                    }
                 }
             }
 
@@ -335,6 +338,17 @@ namespace CardWizardWPF
                         x = margin;
                         y += maxRowHeight + spacing;
                         maxRowHeight = 0;
+                    }
+
+                    if (y + drawHeight > pageHeight)
+                    {
+                        // Create a new page and retry placing the image
+                        page = pdfDocument.AddPage();
+                        gfx = XGraphics.FromPdfPage(page);
+                        x = margin;
+                        y = margin;
+                        maxRowHeight = 0;
+                        imagesOnPage = 0;
                     }
 
                     // Draw the image

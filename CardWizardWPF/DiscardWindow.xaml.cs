@@ -20,29 +20,30 @@ namespace CardWizardWPF
     public partial class DiscardWindow : Window
     {
         
-        private List<Image> disCards;
-        public delegate void CardActionHandler(Image card, string action);
+        private List<SearchableImage> disCards;
+        public delegate void CardActionHandler(SearchableImage card, string action);
         public event CardActionHandler CardActionRequested;
 
-        public DiscardWindow(List<Image> discard)
+        public DiscardWindow(List<SearchableImage> discard)
         {
             InitializeComponent();
             disCards = discard;
             PopulateDiscard();
         }
 
-        public void UpdateDiscard()
+        public void UpdateDiscard(List<SearchableImage> cards)
         {
+            disCards = cards;
             PopulateDiscard(); // Refreshes the hand UI
         }
 
-        private void HandleCardMove(Image card, string action)
+        private void HandleCardMove(SearchableImage card, string action)
         {
             if (disCards.Contains(card))
             {
                 disCards.Remove(card); // Remove from hand
                 CardActionRequested?.Invoke(card, action); // Invoke action
-                UpdateDiscard(); // Refresh the UI
+                UpdateDiscard(disCards); // Refresh the UI
             }
         }
 
@@ -51,11 +52,11 @@ namespace CardWizardWPF
         {
             DiscardPanel.Children.Clear();
 
-            foreach (var card in new List<Image>(disCards)) // Create a copy to prevent modification issues
+            foreach (var card in new List<SearchableImage>(disCards)) // Create a copy to prevent modification issues
             {
                 Image cardCopy = new Image
                 {
-                    Source = card.Source,
+                    Source = card.image.Source,
                     Width = 100,
                     Height = 150,
                     Margin = new Thickness(5)

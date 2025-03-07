@@ -67,6 +67,7 @@ namespace CardWizardWPF
 
             commandBar.Children.Add(CreateTextButton());
             commandBar.Children.Add(CreateImageButton());
+            commandBar.Children.Add(CreateCanvasFitImageButton());
             commandBar.Children.Add(CreateTemplateDropdown());
 
             CheckAndReconstructCanvas();
@@ -92,6 +93,15 @@ namespace CardWizardWPF
                 Content = "Add Image",
             };
             addimagebutton.Click += ImageButton_Click;
+            return addimagebutton;
+        }
+        private Button CreateCanvasFitImageButton()
+        {
+            Button addimagebutton = new Button
+            {
+                Content = "Add Image that fits canvas",
+            };
+            addimagebutton.Click += CanvasFitImageButton_Click;
             return addimagebutton;
         }
         private Button CreateTextButton()
@@ -323,6 +333,62 @@ namespace CardWizardWPF
                 cardcanvas.Children.Add(image);
             }
         }
+        private void CanvasFitImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Create an OpenFileDialog to select image files
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Select an Image",
+                Filter = "Image Files (*.jpeg;*.jpg;*.png)|*.jpeg;*.jpg;*.png",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures) // Default location
+            };
+
+            // Show the dialog and check if a file was selected
+            if (openFileDialog.ShowDialog() == true) // Returns true when a file is selected
+            {
+                string selectedFilePath = openFileDialog.FileName;
+
+                // Load the selected image into a BitmapImage
+                BitmapImage bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.UriSource = new Uri(selectedFilePath, UriKind.Absolute);
+                bitmapImage.EndInit();
+
+                // Create an Image control to display the selected image
+                Image image = new Image
+                {
+                    Source = bitmapImage,
+                    Stretch = Stretch.Uniform
+                };
+
+                // Set initial position (optional)
+                Canvas.SetLeft(image, 0);
+                Canvas.SetTop(image, 0);
+                // Calculate the scale factors
+                double canvasWidth = cardcanvas.ActualWidth;
+                double canvasHeight = cardcanvas.ActualHeight;
+                double imageWidth = bitmapImage.PixelWidth;
+                double imageHeight = bitmapImage.PixelHeight;
+
+                // Scale image to fit inside the canvas while maintaining its aspect ratio
+                
+
+                // Set the scaled width and height for the image
+                image.Width = canvasWidth;
+                image.Height = canvasHeight;
+
+                // Set initial position (optional)
+                Canvas.SetLeft(image, 0);  // Center horizontally
+                Canvas.SetTop(image, 0); // Center vertically
+
+                image.MouseDown += Element_MouseDown;
+                image.MouseMove += Element_MouseMoved;
+                image.MouseUp += Element_MouseUp;
+                image.MouseRightButtonDown += Element_MouseRightButtonDown;
+                // Add the Image control to the Canvas
+                cardcanvas.Children.Add(image);
+            }
+        }
         //**********************************************************
         // Function name: TextButton_Click
         //
@@ -482,7 +548,6 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred: {ex.Message}", "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void save_assets_to_file()
         {
             try
@@ -574,7 +639,6 @@ namespace CardWizardWPF
                 MessageBox.Show($"Error saving card assets: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void reconstruct_canvas_from_file()
         {
             try
@@ -670,7 +734,6 @@ namespace CardWizardWPF
                 MessageBox.Show($"Error reconstructing canvas: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         public class CanvasItem
         {
             public string Type { get; set; }
@@ -679,14 +742,12 @@ namespace CardWizardWPF
             public double PositionY { get; set; }
             public double Width { get; set; }
             public double Height { get; set; }
-
             // For "Text" items
             public string Content { get; set; }
             public int FontSize { get; set; }
             public string Color { get; set; }
             public int StrokeWidth { get; set; }
         }
-        
         private void CheckAndReconstructCanvas()
         {
             string jsonFilePath = Path.Combine(card.FolderPath, "assets.json");
@@ -717,8 +778,6 @@ namespace CardWizardWPF
                 }
             }
         }
-
-
         //****************************************************************************
         //
         //   MOUSE PRESSED/MOVED/RELEASED HANDLERS
@@ -854,9 +913,6 @@ namespace CardWizardWPF
                 e.Handled = true;
             }
         }
-
-
-
         private void ResizeImage(Image image)
         {
             if (image != null)
@@ -875,7 +931,6 @@ namespace CardWizardWPF
                 element.RenderTransform = rotateTransform;
             }
         }
-
         private void RemoveElement(UIElement element)
         {
             if (cardcanvas != null && element != null)
@@ -883,8 +938,6 @@ namespace CardWizardWPF
                 cardcanvas.Children.Remove(element);
             }
         }
-
-
         private void ChangeFont(TextBlock textBlock)
         {
             if (textBlock != null)
