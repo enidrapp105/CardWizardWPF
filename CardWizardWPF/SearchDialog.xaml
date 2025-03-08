@@ -7,33 +7,30 @@
         mc:Ignorable="d"
         Title="SearchDialog" Height="450" Width="800">
     <Grid>
-        <StackPanel Margin="10">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+                <!-- Search Type Selection -->
+                <TextBlock Text="Select search type:" FontWeight="Bold" Margin="0,0,0,5"/>
 
-            <!-- Search Type Selection -->
-            <TextBlock Text="Select search type:" FontWeight="Bold" Margin="0,0,0,5"/>
+                <RadioButton x:Name="rbName" Content="Search by Name" IsChecked="True" Margin="0,5" />
+                <RadioButton x:Name="rbAttribute" Content="Search by Attribute" Margin="0,5" Checked="OnAttrSearchButton_Checked" Unchecked="OnAttrSearchButton_Unchecked"/>
 
-            <RadioButton x:Name="rbName" Content="Search by Name" IsChecked="True" Margin="0,5" />
-            <RadioButton x:Name="rbAttribute" Content="Search by Attribute" Margin="0,5" Checked="OnAttrSearchButton_Checked" Unchecked="OnAttrSearchButton_Unchecked"/>
+                <!-- Name Search -->
+                <TextBlock Text="Enter name:" Margin="0,10,0,5"/>
+                <TextBox x:Name="txtName" Margin="0,5" Visibility="Visible"/>
 
-            <!-- Name Search -->
-            <TextBlock Text="Enter name:" Margin="0,10,0,5"/>
-            <TextBox x:Name="txtName" Margin="0,5" Visibility="Visible"/>
+                <!-- Attribute Search -->
+                <TextBlock Text="Select attributes:" Margin="0,10,0,5"/>
+                <ListBox x:Name="lstAttributes" SelectionMode="Multiple" Visibility="Collapsed" Margin="0,5"/>
 
-            <!-- Attribute Search -->
-            <TextBlock Text="Select attributes:" Margin="0,10,0,5"/>
-            <ListBox x:Name="lstAttributes" SelectionMode="Multiple" Visibility="Collapsed" Margin="0,5">
-                
-            </ListBox>
+                <!-- Images Display Area -->
+                <TextBlock Text="Search Results:" Margin="0,10,0,5"/>
 
-            <!-- Images Display Area -->
-            <TextBlock Text="Search Results:" Margin="0,10,0,5"/>
-            <ScrollViewer>
                 <WrapPanel x:Name="wrapPanel" Margin="0,10" />
-            </ScrollViewer>
-            <!-- Search Button -->
-            <Button Content="Search" HorizontalAlignment="Right" Width="75" Margin="10,10,10,10" Click="OnSearchButtonClick"/>
-            <!-- Cancel Button -->
-            <Button Content="Cancel" HorizontalAlignment="Right" Width="75" Margin="0,10,10,10"/>
-        </StackPanel>
+
+                <!-- Search Button -->
+                <Button Content="Search" HorizontalAlignment="Right" Width="75" Margin="10,10,10,10" Click="OnSearchButtonClick"/>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>
