@@ -140,5 +140,20 @@ namespace CardWizardWPF
             }
             return card;
         }
+        public void Load_Attributes()
+        {
+            HashSet<string> attributes = new HashSet<string>();
+            foreach(Card card in Cards)
+            {
+                foreach(string attr in card.Attributes)
+                {
+                    attributes.Add(attr);
+                }
+            }
+            foreach(string attr in attributes)
+            {
+                Attributes.Add(attr);
+            }
+        }
     }
 }

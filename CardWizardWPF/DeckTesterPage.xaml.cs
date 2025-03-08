@@ -29,13 +29,17 @@ namespace CardWizardWPF
         public Image image;
         public string Name;
         public List<string> CardAttributes { get; set; }
-        public double X { get; set; }  // Position on Canvas
-        public double Y { get; set; }
+
         public SearchableImage(Image image, string name, List<string> attributes)
         {
             this.image = image;
             Name = name;
-            CardAttributes = attributes;
+
+            CardAttributes = new List<string>();
+            foreach(string attribute in attributes)
+            {
+                CardAttributes.Add(attribute);
+            }
         }
     }
     public partial class DeckTesterPage : Page
@@ -48,8 +52,9 @@ namespace CardWizardWPF
         private double imageOffsetX, imageOffsetY;
         private HandWindow handWindow;
         private DiscardWindow discardWindow;
+        private SearchDialog searchDialog;
 
-        
+
         public DeckTesterPage(Deck deck)
         {
             this.deck = deck;
@@ -57,7 +62,7 @@ namespace CardWizardWPF
             hand = new List<SearchableImage> ();
             discard = new List<SearchableImage> ();
             deck.Load_Card_images();
-            
+            deck.Load_Attributes();
             InitializeComponent();
             deckzone.PreviewMouseRightButtonDown += Element_RightMouseDown;
             deckzone.PreviewMouseLeftButtonDown += testerdeck_LeftMouseDown;
@@ -133,6 +138,23 @@ namespace CardWizardWPF
             }
 
             OpenhandWindow();
+        }
+        private void Mill()
+        {
+            if (testerdeck.Count == 0)
+            {
+                return;
+            }
+            Move_card_generic(testerdeck.First(), discard, testerdeck);
+            OpendiscardWindow();
+        }
+        private void MillX(int x)
+        {
+            for(int j = 0;j < x;j++)
+            {
+                Mill();
+            }
+            OpendiscardWindow();
         }
         private void OpenhandWindow()
         {
@@ -389,9 +411,14 @@ namespace CardWizardWPF
         }
         private void Tester_Back_Button_Click(object sender, RoutedEventArgs e)
         {
-            handWindow.Close();
-            discardWindow.Close();
-            if (Application.Current.MainWindow is MainWindow mainWindow)
+            if (handWindow != null)
+                handWindow.Close();
+            if (discardWindow != null)
+                discardWindow.Close();
+            if (searchDialog != null)
+                searchDialog.Close();
+
+                if (Application.Current.MainWindow is MainWindow mainWindow)
             {
                 mainWindow.TransitionTo(new DefaultState(), null, deck);
             }
@@ -473,10 +500,26 @@ namespace CardWizardWPF
                             MessageBox.Show("Please enter a valid number.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     };
+                    MenuItem millOption = new MenuItem { Header = "Mill 1" };
+                    millOption.Click += (s, args) => Mill();
+                    MenuItem millXOption = new MenuItem { Header = "Mill X..." };
+                    millXOption.Click += (s, args) =>
+                    {
+                        // Show input dialog to enter a number
+                        string input = Microsoft.VisualBasic.Interaction.InputBox("Enter number of cards to mill:", "Mill X", "1");
+                        if (int.TryParse(input, out int numberOfCards) && numberOfCards > 0)
+                        {
+                            MillX(numberOfCards);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Please enter a valid number.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    };
                     MenuItem searchOption = new MenuItem { Header = "Search" };
                     searchOption.Click += (s, args) =>
                     {
-                        SearchDialog searchDialog = new SearchDialog(this);
+                        searchDialog = new SearchDialog(this);
                         searchDialog.CardActionRequested += SearcherHandleCardAction;
                         searchDialog.Show();
 
@@ -484,6 +527,8 @@ namespace CardWizardWPF
 
                     rightClickMenu.Items.Add(drawOption);
                     rightClickMenu.Items.Add(drawXOption);
+                    rightClickMenu.Items.Add(millOption);
+                    rightClickMenu.Items.Add(millXOption);
                     rightClickMenu.Items.Add(shuffleOption);
                     rightClickMenu.Items.Add(scoopOption);
                     rightClickMenu.Items.Add(searchOption);

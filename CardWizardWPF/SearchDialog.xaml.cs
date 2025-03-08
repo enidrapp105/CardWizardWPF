@@ -20,7 +20,10 @@ namespace CardWizardWPF
         {
             InitializeComponent();
             _deckTesterPage = deckTesterPage; // Assign instance
+            
             SearchResults = new List<SearchableImage>();
+            MessageBox.Show($"Deck Attributes Count: {_deckTesterPage.deck.Attributes?.Count ?? 0}");
+            LoadAttributeButtons();
         }
         private void HandleCardMove(SearchableImage card, string action)
         {
@@ -29,6 +32,33 @@ namespace CardWizardWPF
                 SearchResults.Remove(card); // Remove from hand
                 CardActionRequested?.Invoke(card, action); // Invoke action
                 PopulateSearchResults(); // Refresh the UI
+            }
+        }
+        private void OnAttrSearchButton_Checked(object sender, RoutedEventArgs e)
+        {
+            lstAttributes.Visibility = Visibility.Visible;
+        }
+        private void OnAttrSearchButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            lstAttributes.Visibility = Visibility.Collapsed;
+        }
+        private void LoadAttributeButtons()
+        {
+            // Ensure the deck and its Attributes list are not null
+            if (_deckTesterPage?.deck == null || _deckTesterPage.deck.Attributes == null)
+            {
+                MessageBox.Show("Deck or Attributes list is not initialized.");
+                return;
+            }
+
+            // Populate ListBox with attributes
+            foreach (string attribute in _deckTesterPage.deck.Attributes)
+            {
+                ListBoxItem attrButton = new ListBoxItem
+                {
+                    Content = attribute
+                };
+                lstAttributes.Items.Add(attrButton);
             }
         }
         private void OnSearchButtonClick(object sender, RoutedEventArgs e)
@@ -44,9 +74,9 @@ namespace CardWizardWPF
             else if (rbAttribute.IsChecked == true)
             {
                 List<string> selectedAttributes = new List<string>();
-                foreach (var item in lstAttributes.SelectedItems)
+                foreach (ListBoxItem item in lstAttributes.SelectedItems)
                 {
-                    selectedAttributes.Add(item.ToString());
+                    selectedAttributes.Add(item.Content.ToString());
                 }
                 SearchResults = _deckTesterPage.SearchDeckFilterAttribute(selectedAttributes); // Use instance
             }
