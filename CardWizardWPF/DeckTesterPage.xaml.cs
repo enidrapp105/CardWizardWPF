@@ -27,15 +27,15 @@ namespace CardWizardWPF
     public class SearchableImage
     {
         public Image image;
-        string Name;
-        List<string> Attributes;
+        public string Name;
+        public List<string> CardAttributes { get; set; }
         public double X { get; set; }  // Position on Canvas
         public double Y { get; set; }
         public SearchableImage(Image image, string name, List<string> attributes)
         {
             this.image = image;
             Name = name;
-            Attributes = attributes;
+            CardAttributes = attributes;
         }
     }
     public partial class DeckTesterPage : Page
@@ -57,7 +57,6 @@ namespace CardWizardWPF
             hand = new List<SearchableImage> ();
             discard = new List<SearchableImage> ();
             deck.Load_Card_images();
-
             
             InitializeComponent();
             deckzone.PreviewMouseRightButtonDown += Element_RightMouseDown;
@@ -91,7 +90,12 @@ namespace CardWizardWPF
         {
             List<SearchableImage> cardsToMove = field.Children
                 .OfType<Image>()
-                .Select(img => testerdeck.FirstOrDefault(si => si.image == img))
+                .Select(img =>
+                {
+                    // Grab the Tag property of the image (it should contain the SearchableImage)
+                    var searchableImage = img.Tag as SearchableImage;
+                    return searchableImage != null ? searchableImage : testerdeck.FirstOrDefault(si => si.image == img);
+                })
                 .Where(si => si != null)
                 .ToList();
 
@@ -156,11 +160,7 @@ namespace CardWizardWPF
                 discardWindow.UpdateDiscard(discard); // Refresh the window if already open
             }
         }
-        private void SearchDeckFilter()
-        {
-            //should search the tester deck but the tester deck is only a list of images with no attributes or names
-        }
-        private void Move_card_to_deck(SearchableImage card, string position, List<SearchableImage> sender)
+        public void Move_card_to_deck(SearchableImage card, string position, List<SearchableImage> sender)
         {
             if (sender == null) //canvas case
             {
@@ -187,7 +187,7 @@ namespace CardWizardWPF
                     break;
             }
         }
-        private void Move_card_generic(SearchableImage card, List<SearchableImage> location, List<SearchableImage> sender)
+        public void Move_card_generic(SearchableImage card, List<SearchableImage> location, List<SearchableImage> sender)
         {
             if(sender != null) 
             {
@@ -202,16 +202,14 @@ namespace CardWizardWPF
                 Move_card_generic(card, location, sender);
             }
         }
-        private void AddSearchableImageToCanvas(SearchableImage searchableImage, double x, double y)
+        public List<SearchableImage> SearchDeckFilterName(string name)
         {
-            if (searchableImage?.image == null) return;
+            return testerdeck.FindAll(card => card.Name.Contains(name));
+        }
 
-            // Set the position
-            Canvas.SetLeft(searchableImage.image, x);
-            Canvas.SetTop(searchableImage.image, y);
-
-            // Add the Image to the Canvas
-            field.Children.Add(searchableImage.image);
+        public List<SearchableImage> SearchDeckFilterAttribute(List<string> attributes)
+        {
+            return testerdeck.FindAll(card => card.CardAttributes.Any(attr => attributes.Contains(attr)));
         }
         //****************************************************************************
         //
@@ -264,6 +262,7 @@ namespace CardWizardWPF
                     break;
                 case "Hand":
                     Move_card_generic(card, hand, discard); // Assume Deck is a List<Image>
+                    OpenhandWindow();
                     break;
                 case "Field":
                     Image newImage = new Image
@@ -304,6 +303,7 @@ namespace CardWizardWPF
                     break;
                 case "Discard":
                     Move_card_generic(card, discard, hand); // Assume Deck is a List<Image>
+                    OpendiscardWindow();
                     break;
                 case "Field":
                     Image newImage = new Image
@@ -333,6 +333,60 @@ namespace CardWizardWPF
             }
             OpenhandWindow();
         }
+        private void SearcherHandleCardAction(SearchableImage card, string action)
+        {
+            bool shuffle = false;
+            // Move card based on the action
+            switch (action)
+            {
+                case "TopDeck":
+                    Move_card_to_deck(card, "top", testerdeck); // Assume Deck is a List<Image>
+                    break;
+                case "BottomDeck":
+                    Move_card_to_deck(card, "bottom", testerdeck); // Assume Deck is a List<Image>
+                    break;
+                case "Hand":
+                    Move_card_generic(card, hand, testerdeck); // Assume Deck is a List<Image>
+                    shuffle = true;
+                    OpenhandWindow();
+                    break;
+                case "Discard":
+                    Move_card_generic(card, discard, testerdeck); // Assume Deck is a List<Image>
+                    shuffle = true;
+                    OpenhandWindow();
+                    break;
+                case "Field":
+                    testerdeck.Remove(card);
+                    shuffle = true;
+                    Image newImage = new Image
+                    {
+                        Source = card.image.Source, // Copy the card's image
+                        Width = card.image.Width > 0 ? card.image.Width : 100,   // Default width
+                        Height = card.image.Height > 0 ? card.image.Height : 150 // Default height
+                    };
+                    newImage.Tag = card;
+                    // Add mouse event handlers
+                    newImage.MouseLeftButtonDown += Element_LeftMouseDown;
+                    newImage.MouseRightButtonDown += Element_RightMouseDown;
+                    newImage.MouseMove += Element_MouseMoved;
+                    newImage.MouseUp += Element_MouseUp;
+
+                    // Get mouse position relative to the Canvas
+                    Point mousePos = Mouse.GetPosition(field);
+
+                    // Set the image at the cursor position with an offset
+                    Canvas.SetLeft(newImage, 200);  // Fixed X position
+                    Canvas.SetTop(newImage, 300);
+
+                    // Add the image to the Canvas (field)
+                    field.Children.Add(newImage);
+                    break;
+            }
+            if(shuffle)
+            {
+                ShuffleTesterDeck();
+            }
+        }
         private void Tester_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             handWindow.Close();
@@ -346,15 +400,10 @@ namespace CardWizardWPF
                 MessageBox.Show("Unable to navigate back.", "Error");
             }
         }
-
-        private DateTime _lastClickTime = DateTime.MinValue;
-        private const int DoubleClickThreshold = 500; // 500 ms (adjustable)
         private void Element_LeftMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (isImageDragging)
             {
-                // Reset last click time to prevent double-click detection during dragging
-                _lastClickTime = DateTime.MinValue;
                 return;
             }
 
@@ -424,11 +473,20 @@ namespace CardWizardWPF
                             MessageBox.Show("Please enter a valid number.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     };
+                    MenuItem searchOption = new MenuItem { Header = "Search" };
+                    searchOption.Click += (s, args) =>
+                    {
+                        SearchDialog searchDialog = new SearchDialog(this);
+                        searchDialog.CardActionRequested += SearcherHandleCardAction;
+                        searchDialog.Show();
+
+                    };
 
                     rightClickMenu.Items.Add(drawOption);
                     rightClickMenu.Items.Add(drawXOption);
                     rightClickMenu.Items.Add(shuffleOption);
                     rightClickMenu.Items.Add(scoopOption);
+                    rightClickMenu.Items.Add(searchOption);
                 }
 
                 // Show the context menu at the mouse position

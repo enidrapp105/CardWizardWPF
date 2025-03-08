@@ -1,0 +1,42 @@
+﻿<Window x:Class="CardWizardWPF.SearchDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CardWizardWPF"
+        mc:Ignorable="d"
+        Title="SearchDialog" Height="450" Width="800">
+    <Grid>
+        <StackPanel Margin="10">
+
+            <!-- Search Type Selection -->
+            <TextBlock Text="Select search type:" FontWeight="Bold" Margin="0,0,0,5"/>
+
+            <RadioButton x:Name="rbName" Content="Search by Name" IsChecked="True" Margin="0,5" />
+            <RadioButton x:Name="rbAttribute" Content="Search by Attribute" Margin="0,5" />
+
+            <!-- Name Search -->
+            <TextBlock Text="Enter name:" Margin="0,10,0,5"/>
+            <TextBox x:Name="txtName" Margin="0,5" Visibility="Visible"/>
+
+            <!-- Attribute Search -->
+            <TextBlock Text="Select attributes:" Margin="0,10,0,5"/>
+            <ListBox x:Name="lstAttributes" SelectionMode="Multiple" Visibility="Collapsed" Margin="0,5">
+                <ListBoxItem>Attribute 1</ListBoxItem>
+                <ListBoxItem>Attribute 2</ListBoxItem>
+                <ListBoxItem>Attribute 3</ListBoxItem>
+                <!-- Add more attributes as needed -->
+            </ListBox>
+
+            <!-- Images Display Area -->
+            <TextBlock Text="Search Results:" Margin="0,10,0,5"/>
+            <ScrollViewer>
+                <WrapPanel x:Name="wrapPanel" Margin="0,10" />
+            </ScrollViewer>
+            <!-- Search Button -->
+            <Button Content="Search" HorizontalAlignment="Right" Width="75" Margin="10,10,10,10" Click="OnSearchButtonClick"/>
+            <!-- Cancel Button -->
+            <Button Content="Cancel" HorizontalAlignment="Right" Width="75" Margin="0,10,10,10"/>
+        </StackPanel>
+    </Grid>
+</Window>
