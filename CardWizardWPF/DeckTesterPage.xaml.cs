@@ -50,7 +50,6 @@ namespace CardWizardWPF
         private double imageOffsetX, imageOffsetY;
         private SearchDialog searchDialog;
         private Dictionary<string, CardZoneWindow> cardZones;
-
         public DeckTesterPage(Deck deck)
         {
             this.deck = deck;
@@ -117,13 +116,11 @@ namespace CardWizardWPF
             }
             UpdateZones();
         }
-
         private List<SearchableImage> GetCardsForZone(string zoneName)
         {
             // Placeholder logic to return cards for each zone
             return new List<SearchableImage>();
         }
-
         private void HandleCardAction(SearchableImage card, string action)
         {
             switch (action)
@@ -329,7 +326,6 @@ namespace CardWizardWPF
         {
             return testerdeck.FindAll(card => card.Name.Contains(name));
         }
-
         public List<SearchableImage> SearchDeckFilterAttribute(List<string> attributes)
         {
             return testerdeck.FindAll(card => card.CardAttributes.Any(attr => attributes.Contains(attr)));
