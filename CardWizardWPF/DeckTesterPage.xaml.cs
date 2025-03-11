@@ -46,29 +46,178 @@ namespace CardWizardWPF
     {
         public Deck deck;
         public List<SearchableImage> testerdeck;
-        public List<SearchableImage> hand;
-        public List<SearchableImage> discard;
         private bool isImageDragging = false;
         private double imageOffsetX, imageOffsetY;
-        private HandWindow handWindow;
-        private DiscardWindow discardWindow;
         private SearchDialog searchDialog;
-
+        private Dictionary<string, CardZoneWindow> cardZones;
 
         public DeckTesterPage(Deck deck)
         {
             this.deck = deck;
             testerdeck = new List<SearchableImage>();
-            hand = new List<SearchableImage> ();
-            discard = new List<SearchableImage> ();
+            cardZones = new Dictionary<string, CardZoneWindow> ();
             deck.Load_Card_images();
             deck.Load_Attributes();
             InitializeComponent();
+            InitializeCardZones();
             deckzone.PreviewMouseRightButtonDown += Element_RightMouseDown;
             deckzone.PreviewMouseLeftButtonDown += testerdeck_LeftMouseDown;
             Load_tester_deck();
         }
+        private void InitCardZone(string zonename)
+        {
+            Button Button = new Button
+            {
+                Content = zonename,
+                Margin = new Thickness(5),
+                Width = 100
+            };
+            Button.Click += (sender, e) => OpenCardZoneWindow(zonename);
+            CommandBar.Children.Add(Button);
 
+        }
+        private void UpdateZones()
+        {
+            foreach(CardZoneWindow zone in cardZones.Values)
+            {
+                zone.OtherZones = cardZones.Keys.ToList();
+                zone.UpdateCards(zone.Cards);
+            }
+        }
+        private void InitializeCardZones()
+        {
+            InitCardZone("Hand");
+            InitCardZone("Discard");
+            UpdateZones();
+        }
+        private void OpenCardZoneWindow(string zoneName)
+        {
+            // Check if the window for the zone is already open
+            if (!cardZones.ContainsKey(zoneName))
+            {
+                CardZoneWindow cardZoneWindow = new CardZoneWindow(zoneName);
+                cardZoneWindow.CardActionRequested += HandleCardAction;
+                cardZoneWindow.ZoneCloseRequested += ZoneCloseAction;
+
+                // Optionally, populate the window with cards from a source (e.g., Hand, Discard)
+                List<SearchableImage> zoneCards = GetCardsForZone(zoneName);
+                cardZoneWindow.Cards = zoneCards;
+                cardZoneWindow.Width = 400;  // Set desired width
+                cardZoneWindow.Height = 300; // Set desired height
+                // Store the window so you can track it
+                cardZones[zoneName] = cardZoneWindow;
+                cardZoneWindow.Title = zoneName;
+                // Open the window
+                cardZoneWindow.Show();
+            }
+            else
+            {
+                // If the window is already open, bring it to the front
+                cardZones[zoneName].Activate();
+            }
+            UpdateZones();
+        }
+
+        private List<SearchableImage> GetCardsForZone(string zoneName)
+        {
+            // Placeholder logic to return cards for each zone
+            return new List<SearchableImage>();
+        }
+
+        private void HandleCardAction(SearchableImage card, string action)
+        {
+            switch (action)
+            {
+                case "TopDeck":
+                    foreach (var cardZoneEntry in cardZones)
+                    {
+                        // Check if the card exists in this zone's cards
+                        if (cardZoneEntry.Value.Cards.Contains(card))
+                        {
+                            // Remove the card from the zone
+                            cardZoneEntry.Value.Cards.Remove(card);
+
+                            // Move the card to the top of the deck
+                            Move_card_to_deck(card, "top");
+
+                            break; // Exit the loop once the card is found and removed
+                        }
+                    }
+                    break;
+                case "BottomDeck":
+                    foreach (var cardZoneEntry in cardZones)
+                    {
+                        // Check if the card exists in this zone's cards
+                        if (cardZoneEntry.Value.Cards.Contains(card))
+                        {
+                            // Remove the card from the zone
+                            cardZoneEntry.Value.Cards.Remove(card);
+
+                            // Move the card to the top of the deck
+                            Move_card_to_deck(card, "bottom");
+
+                            break; // Exit the loop once the card is found and removed
+                        }
+                    }
+                    break;
+                case "Field":
+                    foreach (var cardZoneEntry in cardZones)
+                    {
+                        // Check if the card exists in this zone's cards
+                        if (cardZoneEntry.Value.Cards.Contains(card))
+                        {
+                            // Remove the card from the zone
+                            LoadCardtofield(card);
+                            cardZoneEntry.Value.Cards.Remove(card);
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    foreach (var cardZoneEntry in cardZones)
+                    {
+                        // Check if the card exists in this zone's cards
+                        if (cardZoneEntry.Value.Cards.Contains(card))
+                        {
+                            cardZoneEntry.Value.Cards.Remove(card);
+                            break;
+                        }
+                    }
+                    cardZones[action].Cards.Add(card);
+                    break;
+            }
+            UpdateZones();
+        }
+        private void LoadCardtofield(SearchableImage card)
+        {
+            Image newImage = new Image
+            {
+                Source = card.image.Source, // Copy the card's image
+                Width = card.image.Width > 0 ? card.image.Width : 100,   // Default width
+                Height = card.image.Height > 0 ? card.image.Height : 150 // Default height
+            };
+            newImage.Tag = card;
+            // Add mouse event handlers
+            newImage.MouseLeftButtonDown += Element_LeftMouseDown;
+            newImage.MouseRightButtonDown += Element_RightMouseDown;
+            newImage.MouseMove += Element_MouseMoved;
+            newImage.MouseUp += Element_MouseUp;
+
+            // Get mouse position relative to the Canvas
+            Point mousePos = Mouse.GetPosition(field);
+
+            // Set the image at the cursor position with an offset
+            Canvas.SetLeft(newImage, 200);  // Fixed X position
+            Canvas.SetTop(newImage, 300);
+
+            // Add the image to the Canvas (field)
+            field.Children.Add(newImage);
+        }
+        private void ZoneCloseAction(string zonename)
+        {
+            cardZones.Remove(zonename);
+            UpdateZones();
+        }
         private void Load_tester_deck()
         {
             foreach(Card card in this.deck.Cards)
@@ -106,19 +255,17 @@ namespace CardWizardWPF
 
             foreach (SearchableImage card in cardsToMove)
             {
-                Move_card_to_deck(card, "top", null);
+                Move_card_to_deck(card, "top");
             }
-            foreach (SearchableImage card in discard.ToList())
+            foreach (var zoneentry in cardZones)
             {
-                Move_card_to_deck(card, "top", discard);
-                
+                foreach (var card in new List<SearchableImage>(zoneentry.Value.Cards))
+                {
+                    Move_card_to_deck(card, "top");
+                    zoneentry.Value.Cards.Remove(card);
+                }
             }
-            foreach (SearchableImage card in hand.ToList())
-            {
-                Move_card_to_deck(card, "top", hand);
-            }
-            OpenhandWindow();
-            OpendiscardWindow();
+            UpdateZones();
             ShuffleTesterDeck();
         }
         private void Draw()
@@ -127,8 +274,9 @@ namespace CardWizardWPF
             {
                 return;
             }
-            Move_card_generic(testerdeck.First(), hand, testerdeck);
-            OpenhandWindow();
+            Move_card_generic(testerdeck.First(), cardZones["Hand"].Cards);
+            cardZones["Hand"].UpdateCards(cardZones["Hand"].Cards);
+            testerdeck.Remove(testerdeck.First());
         }
         private void DrawX(int x)
         {
@@ -137,7 +285,6 @@ namespace CardWizardWPF
                 Draw();
             }
 
-            OpenhandWindow();
         }
         private void Mill()
         {
@@ -145,8 +292,9 @@ namespace CardWizardWPF
             {
                 return;
             }
-            Move_card_generic(testerdeck.First(), discard, testerdeck);
-            OpendiscardWindow();
+            Move_card_generic(testerdeck.First(), cardZones["Discard"].Cards);
+            cardZones["Discard"].UpdateCards(cardZones["Discard"].Cards);
+            testerdeck.Remove(testerdeck.First());
         }
         private void MillX(int x)
         {
@@ -154,51 +302,9 @@ namespace CardWizardWPF
             {
                 Mill();
             }
-            OpendiscardWindow();
         }
-        private void OpenhandWindow()
-        {
-            if (handWindow == null || !handWindow.IsLoaded)
-            {
-                handWindow = new HandWindow(hand);
-                handWindow.CardActionRequested += HandHandleCardAction;
-                handWindow.Show();
-            }
-            else
-            {
-                handWindow.UpdateHand(hand);
-            }
-        }
-        private void OpendiscardWindow()
-        {
-            if (discardWindow == null || !discardWindow.IsLoaded)
-            {
-                discardWindow = new DiscardWindow(discard);
-                discardWindow.CardActionRequested += DiscardHandleCardAction;
-                discardWindow.Show();
-            }
-            else
-            {
-                discardWindow.UpdateDiscard(discard); // Refresh the window if already open
-            }
-        }
-        public void Move_card_to_deck(SearchableImage card, string position, List<SearchableImage> sender)
-        {
-            if (sender == null) //canvas case
-            {
-                foreach (UIElement child in field.Children)
-                {
-                    if (child is Image image && image.Tag == card)
-                    {
-                        field.Children.Remove(child); // Remove the Image from the Canvas
-                        break;
-                    }
-                }
-            }
-            else 
-            {
-                sender.Remove(card);
-            }
+        public void Move_card_to_deck(SearchableImage card, string position)
+        {  
             switch (position)
             {
                 case "bottom":
@@ -209,20 +315,9 @@ namespace CardWizardWPF
                     break;
             }
         }
-        public void Move_card_generic(SearchableImage card, List<SearchableImage> location, List<SearchableImage> sender)
-        {
-            if(sender != null) 
-            {
-                sender.Remove(card);
-                location.Add(card);
-            }
-        }
-        private void Move_Multiple_cards(List<SearchableImage> cards, List<SearchableImage> location, List<SearchableImage> sender)
-        {
-            foreach (SearchableImage card in cards) 
-            {
-                Move_card_generic(card, location, sender);
-            }
+        public void Move_card_generic(SearchableImage card, List<SearchableImage> location)
+        {         
+            location.Add(card);
         }
         public List<SearchableImage> SearchDeckFilterName(string name)
         {
@@ -263,98 +358,6 @@ namespace CardWizardWPF
                 rotateTransform.Angle += 90;
             }
         }
-        private void Hand_Button_Click(object sender, RoutedEventArgs e) 
-        {
-            OpenhandWindow();
-        }
-        private void Discard_Button_Click(object sender, RoutedEventArgs e)
-        {
-            OpendiscardWindow();
-        }
-        private void DiscardHandleCardAction(SearchableImage card, string action)
-        {
-            
-            switch (action)
-            {
-                case "TopDeck":
-                    Move_card_to_deck(card, "top", discard); // Assume Deck is a List<Image>
-                    break;
-                case "BottomDeck":
-                    Move_card_to_deck(card, "bottom", discard); // Assume Deck is a List<Image>
-                    break;
-                case "Hand":
-                    Move_card_generic(card, hand, discard); // Assume Deck is a List<Image>
-                    OpenhandWindow();
-                    break;
-                case "Field":
-                    Image newImage = new Image
-                    {
-                        Source = card.image.Source, // Copy the card's image
-                        Width = card.image.Width > 0 ? card.image.Width : 100,   // Default width
-                        Height = card.image.Height > 0 ? card.image.Height : 150 // Default height
-                    };
-                    newImage.Tag = card;
-                    // Add mouse event handlers
-                    newImage.MouseLeftButtonDown += Element_LeftMouseDown;
-                    newImage.MouseRightButtonDown += Element_RightMouseDown;
-                    newImage.MouseMove += Element_MouseMoved;
-                    newImage.MouseUp += Element_MouseUp;
-
-                    // Get mouse position relative to the Canvas
-                    Point mousePos = Mouse.GetPosition(field);
-
-                    // Set the image at the cursor position with an offset
-                    Canvas.SetLeft(newImage, 200);  // Fixed X position
-                    Canvas.SetTop(newImage, 300);
-
-                    // Add the image to the Canvas (field)
-                    field.Children.Add(newImage);
-                    break;
-            }
-            OpendiscardWindow();
-        }
-        private void HandHandleCardAction(SearchableImage card, string action)
-        {
-            switch (action)
-            {
-                case "TopDeck":
-                    Move_card_to_deck(card, "top", hand); // Assume Deck is a List<Image>
-                    break;
-                case "BottomDeck":
-                    Move_card_to_deck(card, "bottom", hand); // Assume Deck is a List<Image>
-                    break;
-                case "Discard":
-                    Move_card_generic(card, discard, hand); // Assume Deck is a List<Image>
-                    OpendiscardWindow();
-                    break;
-                case "Field":
-                    Image newImage = new Image
-                    {
-                        Source = card.image.Source, // Copy the card's image
-                        Width = card.image.Width > 0 ? card.image.Width : 100,   // Default width
-                        Height = card.image.Height > 0 ? card.image.Height : 150, // Default height
-                        Tag = card
-                    };
-
-                    // Add mouse event handlers
-                    newImage.MouseLeftButtonDown += Element_LeftMouseDown;
-                    newImage.MouseRightButtonDown += Element_RightMouseDown;
-                    newImage.MouseMove += Element_MouseMoved;
-                    newImage.MouseUp += Element_MouseUp;
-
-                    // Get mouse position relative to the Canvas
-                    Point mousePos = Mouse.GetPosition(field);
-
-                    // Set the image at the cursor position with an offset
-                    Canvas.SetLeft(newImage, 200);  // Fixed X position
-                    Canvas.SetTop(newImage, 300);
-
-                    // Add the image to the Canvas (field)
-                    field.Children.Add(newImage);
-                    break;
-            }
-            OpenhandWindow();
-        }
         private void SearcherHandleCardAction(SearchableImage card, string action)
         {
             bool shuffle = false;
@@ -362,20 +365,12 @@ namespace CardWizardWPF
             switch (action)
             {
                 case "TopDeck":
-                    Move_card_to_deck(card, "top", testerdeck); // Assume Deck is a List<Image>
+                    testerdeck.Remove(card);
+                    Move_card_to_deck(card, "top"); // Assume Deck is a List<Image>
                     break;
                 case "BottomDeck":
-                    Move_card_to_deck(card, "bottom", testerdeck); // Assume Deck is a List<Image>
-                    break;
-                case "Hand":
-                    Move_card_generic(card, hand, testerdeck); // Assume Deck is a List<Image>
-                    shuffle = true;
-                    OpenhandWindow();
-                    break;
-                case "Discard":
-                    Move_card_generic(card, discard, testerdeck); // Assume Deck is a List<Image>
-                    shuffle = true;
-                    OpenhandWindow();
+                    testerdeck.Remove(card);
+                    Move_card_to_deck(card, "bottom"); // Assume Deck is a List<Image>
                     break;
                 case "Field":
                     testerdeck.Remove(card);
@@ -411,10 +406,10 @@ namespace CardWizardWPF
         }
         private void Tester_Back_Button_Click(object sender, RoutedEventArgs e)
         {
-            if (handWindow != null)
-                handWindow.Close();
-            if (discardWindow != null)
-                discardWindow.Close();
+            foreach (var zone in cardZones.Values.ToList())
+            {
+                zone.Close();
+            }
             if (searchDialog != null)
                 searchDialog.Close();
 
@@ -470,12 +465,33 @@ namespace CardWizardWPF
                     {
                         // Add options specific to an Image
                         MenuItem bottomOption = new MenuItem { Header = "Put at Bottom of Deck" };
-                        bottomOption.Click += (s, args) => Move_card_to_deck(searchableImage, "bottom", null);
+                        bottomOption.Click += (s, args) =>
+                        {
+                            Move_card_to_deck(searchableImage, "bottom");
+                            field.Children.Remove(image);
+                        };
                         MenuItem topOption = new MenuItem { Header = "Put at Top of Deck" };
-                        topOption.Click += (s, args) => Move_card_to_deck(searchableImage, "top", null);
+                        topOption.Click += (s, args) =>
+                        {
+                            Move_card_to_deck(searchableImage, "top");
+                            field.Children.Remove(image);
+                        };
 
                         rightClickMenu.Items.Add(bottomOption);
                         rightClickMenu.Items.Add(topOption);
+                        foreach(var zone in cardZones.Keys.ToList())
+                        {
+                            string buttoncontent = "Move to " + zone;
+                            MenuItem zoneOption = new MenuItem { Header = buttoncontent };
+                            zoneOption.Click += (s, args) =>
+                            {
+                                Move_card_generic(searchableImage, cardZones[zone].Cards);
+                                field.Children.Remove(image);
+                                UpdateZones();
+                            };
+                            rightClickMenu.Items.Add(zoneOption);
+
+                        }
                     }
                 }
                 else if(element is Button button && button.Name == "deckzone")

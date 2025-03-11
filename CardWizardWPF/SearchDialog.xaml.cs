@@ -12,7 +12,7 @@ namespace CardWizardWPF
 
         private DeckTesterPage _deckTesterPage; // Store reference
         private List<SearchableImage> SearchResults;
-
+        public List<string> otherZones;
         public delegate void CardActionHandler(SearchableImage card, string action);
         public event CardActionHandler CardActionRequested;
 
@@ -20,7 +20,8 @@ namespace CardWizardWPF
         {
             InitializeComponent();
             _deckTesterPage = deckTesterPage; // Assign instance
-            
+
+            otherZones = new List<string>();
             SearchResults = new List<SearchableImage>();
             MessageBox.Show($"Deck Attributes Count: {_deckTesterPage.deck.Attributes?.Count ?? 0}");
             LoadAttributeButtons();
@@ -102,19 +103,37 @@ namespace CardWizardWPF
                 // Create context menu
                 ContextMenu contextMenu = new ContextMenu();
 
-                MenuItem moveToDiscard = new MenuItem { Header = "Move to Discard" };
-                moveToDiscard.Click += (s, e) => HandleCardMove(card, "Discard");
 
-                MenuItem moveToHand = new MenuItem { Header = "Move to Hand" };
-                moveToHand.Click += (s, e) => HandleCardMove(card, "Hand");
+
+                MenuItem moveToTop = new MenuItem { Header = "Move to Top of Deck" };
+                moveToTop.Click += (s, e) =>
+                {
+                    HandleCardMove(card, "TopDeck");
+                };
+
+                MenuItem moveToBottom = new MenuItem { Header = "Move to Bottom of Deck" };
+                moveToBottom.Click += (s, e) =>
+                {
+                    HandleCardMove(card, "BottomDeck");
+                };
 
                 MenuItem moveToField = new MenuItem { Header = "Move to Field" };
-                moveToField.Click += (s, e) => HandleCardMove(card, "Field");
+                moveToField.Click += (s, e) =>
+                {
+                    HandleCardMove(card, "Field");
+                };
 
-                contextMenu.Items.Add(moveToDiscard);
-                contextMenu.Items.Add(moveToHand);
+                contextMenu.Items.Add(moveToTop);
+                contextMenu.Items.Add(moveToBottom);
                 contextMenu.Items.Add(moveToField);
-
+                foreach (string zonename in otherZones)
+                {
+                    string buttoncontent = "Move to " + zonename;
+                    MenuItem moveToZone = new MenuItem { Header = buttoncontent };
+                    moveToZone.Click += (s, e) => HandleCardMove(card, zonename);
+                    
+                    contextMenu.Items.Add(moveToZone);
+                }
                 cardImage.ContextMenu = contextMenu;
                 wrapPanel.Children.Add(cardImage);
             }
