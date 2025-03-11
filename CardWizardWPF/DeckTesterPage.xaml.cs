@@ -274,9 +274,12 @@ namespace CardWizardWPF
             {
                 return;
             }
-            Move_card_generic(testerdeck.First(), cardZones["Hand"].Cards);
-            cardZones["Hand"].UpdateCards(cardZones["Hand"].Cards);
-            testerdeck.Remove(testerdeck.First());
+            if (cardZones.ContainsKey("Hand"))
+            {
+                Move_card_generic(testerdeck.First(), cardZones["Hand"].Cards);
+                cardZones["Hand"].UpdateCards(cardZones["Hand"].Cards);
+                testerdeck.Remove(testerdeck.First());
+            }
         }
         private void DrawX(int x)
         {
@@ -292,9 +295,12 @@ namespace CardWizardWPF
             {
                 return;
             }
-            Move_card_generic(testerdeck.First(), cardZones["Discard"].Cards);
-            cardZones["Discard"].UpdateCards(cardZones["Discard"].Cards);
-            testerdeck.Remove(testerdeck.First());
+            if (cardZones.ContainsKey("Discard"))
+            {
+                Move_card_generic(testerdeck.First(), cardZones["Discard"].Cards);
+                cardZones["Discard"].UpdateCards(cardZones["Discard"].Cards);
+                testerdeck.Remove(testerdeck.First());
+            }
         }
         private void MillX(int x)
         {
