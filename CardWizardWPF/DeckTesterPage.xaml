@@ -9,27 +9,40 @@
       Title="DeckTesterPage">
 
     <Grid>
-
-        <!-- Define grid rows and columns -->
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <!-- Header -->
-            <RowDefinition Height="*" />
-            <!-- Main content (Frame) -->
-            <RowDefinition Height="Auto" />
-            <!-- Buttons -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Label Content="Deck Tester"/>
+        <!-- Header Section with Label and Button -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <!-- For the Label -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- For the Button -->
+                <ColumnDefinition Width="*"/>
+                <!-- Pushes other content to the right -->
+            </Grid.ColumnDefinitions>
 
-
-        <StackPanel x:Name="CommandBar"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="2" Margin="10">
-            <Button Content="Back" Width="200" Margin="5" Click="Tester_Back_Button_Click"/>
-            <Button x:Name="deckzone" Content="Deck" Width="100" Margin="5" />
-        </StackPanel>
-        <Grid Grid.Row="1">
-            <Canvas x:Name="field" Background="LightGray" Panel.ZIndex="1"/>
+            <Label Content="Deck Tester"  VerticalAlignment="Center" Margin="10"/>
+            <Button Content="Add Zone" Margin="549,0,38,0" Grid.Column="2" VerticalAlignment="Center"/>
         </Grid>
 
+        <!-- Main Canvas Section -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="129*"/>
+                <ColumnDefinition Width="671*"/>
+            </Grid.ColumnDefinitions>
+            <Canvas x:Name="field" Background="LightGray" Panel.ZIndex="1" Grid.ColumnSpan="2"/>
+        </Grid>
+
+        <!-- Bottom Button Bar -->
+        <StackPanel x:Name="CommandBar" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="2" Margin="10">
+            <Button Content="Back" Width="200" Margin="5" Click="Tester_Back_Button_Click"/>
+            <Button x:Name="deckzone" Content="Deck" Width="100" Margin="5"/>
+        </StackPanel>
     </Grid>
 </Page>

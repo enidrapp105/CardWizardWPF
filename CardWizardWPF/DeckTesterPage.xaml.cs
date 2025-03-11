@@ -29,7 +29,6 @@ namespace CardWizardWPF
         public Image image;
         public string Name;
         public List<string> CardAttributes { get; set; }
-
         public SearchableImage(Image image, string name, List<string> attributes)
         {
             this.image = image;
@@ -254,6 +253,7 @@ namespace CardWizardWPF
             {
                 Move_card_to_deck(card, "top");
             }
+            field.Children.Clear();
             foreach (var zoneentry in cardZones)
             {
                 foreach (var card in new List<SearchableImage>(zoneentry.Value.Cards))
@@ -627,7 +627,5 @@ namespace CardWizardWPF
                 field.Children.Add(newImage);
             }
         }
-
-
     }
 }
