@@ -27,10 +27,18 @@
             </Grid.ColumnDefinitions>
 
             <Label Content="Deck Tester"  VerticalAlignment="Center" Margin="10"/>
-            <Button Content="Add Zone" Margin="549,0,38,0" Grid.Column="2" VerticalAlignment="Center"/>
+            <Button Content="Add Zone" Margin="549,0,38,0" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Width="100" Click="Tester_Create_Zone_Button_Click"/>
         </Grid>
 
         <!-- Main Canvas Section -->
+        
+
+        <!-- Bottom Button Bar -->
+        <StackPanel x:Name="CommandBar" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="2" Margin="10">
+            <Button Content="Back" Width="200" Margin="5" Click="Tester_Back_Button_Click"/>
+            <Button x:Name="deckzone" Content="Deck" Width="100" Margin="5"/>
+        </StackPanel>
+
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="129*"/>
@@ -38,11 +46,5 @@
             </Grid.ColumnDefinitions>
             <Canvas x:Name="field" Background="LightGray" Panel.ZIndex="1" Grid.ColumnSpan="2"/>
         </Grid>
-
-        <!-- Bottom Button Bar -->
-        <StackPanel x:Name="CommandBar" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="2" Margin="10">
-            <Button Content="Back" Width="200" Margin="5" Click="Tester_Back_Button_Click"/>
-            <Button x:Name="deckzone" Content="Deck" Width="100" Margin="5"/>
-        </StackPanel>
     </Grid>
 </Page>

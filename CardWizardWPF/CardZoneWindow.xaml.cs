@@ -23,12 +23,10 @@ namespace CardWizardWPF
         public List<SearchableImage> Cards { get; set; }
         public List<string> OtherZones { get; set; }
         public string ZoneName { get; set; }
-
         public delegate void CardActionHandler(SearchableImage card, string action);
         public delegate void ZoneCloseActionHandler(string Zonename);
         public event CardActionHandler CardActionRequested;
         public event ZoneCloseActionHandler ZoneCloseRequested;
-
         public CardZoneWindow(string zoneName)
         {
             InitializeComponent();
@@ -38,13 +36,11 @@ namespace CardWizardWPF
             this.DataContext = this;
             this.Closed += OnCardZoneWindowClosed;
         }
-
         public void UpdateCards(List<SearchableImage> cards)
         {
             Cards = cards;
             PopulateCards();
         }
-
         private void PopulateCards()
         {
             CardsPanel.Children.Clear();
@@ -88,14 +84,17 @@ namespace CardWizardWPF
 
                 foreach (string zonename in OtherZones)
                 {
-                    string buttoncontent = "Move to " + zonename;
-                    MenuItem moveToZone = new MenuItem { Header = buttoncontent };
-                    moveToZone.Click += (s, e) =>
+                    if (zonename != ZoneName)
                     {
-                        CardActionRequested?.Invoke(card, zonename);
-                        CardsPanel.Children.Remove(cardImage);
-                    };
-                    contextMenu.Items.Add(moveToZone);
+                        string buttoncontent = "Move to " + zonename;
+                        MenuItem moveToZone = new MenuItem { Header = buttoncontent };
+                        moveToZone.Click += (s, e) =>
+                        {
+                            CardActionRequested?.Invoke(card, zonename);
+                            CardsPanel.Children.Remove(cardImage);
+                        };
+                        contextMenu.Items.Add(moveToZone);
+                    }
                 }
 
                 cardImage.ContextMenu = contextMenu;

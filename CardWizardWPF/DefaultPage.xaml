@@ -12,6 +12,8 @@
         <!-- Define grid rows and columns -->
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <!-- Card of the Day -->
             <!-- Header -->
             <RowDefinition Height="*" />
             <!-- Main content (Frame) -->
@@ -20,6 +22,11 @@
         </Grid.RowDefinitions>
         <!-- Header -->
         <Label Content="Card Wizard" FontSize="20" HorizontalAlignment="Center" Grid.Row="0" Margin="10"/>
+
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Right" >
+            <Label x:Name="CardOfTheDayLabel" FontSize="16" HorizontalAlignment="Center"/>
+            <Image x:Name="CardOfTheDayImage" Width="152" Height="243" Stretch="Uniform"/>
+        </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="DeckButtonPanel" Orientation="Vertical" HorizontalAlignment="Center" Margin="10"/>

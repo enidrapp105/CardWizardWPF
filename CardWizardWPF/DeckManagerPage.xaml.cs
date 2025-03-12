@@ -70,16 +70,19 @@ namespace CardWizardWPF
                     {
                         Content = card.Name,
                         Tag = card, // Store the card object in the Tag property
-                        Margin = new Thickness(5),
-                        Padding = new Thickness(10)
+                        Margin = new Thickness(0),
+                        Padding = new Thickness(10),
+                        Width = 100
+                        
                     };
                     cardButton.Click += CardButton_Click;
                     Button plusButton = new Button
                     {
                         Content = $"{card.AmountInDeck}+",
                         Tag = card,
-                        Padding = new Thickness(5),
-                        Margin = new Thickness(10)
+                        Margin = new Thickness(0),
+                        Padding = new Thickness(10)
+
                     };
                     plusButton.Click += CardPlusButton_Click;
                     // Create the delete button for the card
@@ -87,16 +90,34 @@ namespace CardWizardWPF
                     {
                         Content = "Delete",
                         Tag = card, // Store the card object in the Tag property
-                        Margin = new Thickness(5),
+                        Margin = new Thickness(0),
                         Padding = new Thickness(10)
                     };
                     deleteButton.Click += Manager_Delete_Card_Click;
 
+                    Button minusButton = new Button
+                    {
+                        Content = "-",
+                        Tag = card,
+                        Margin = new Thickness(0),
+                        Padding = new Thickness(10)
+                    };
+                    minusButton.Click += CardMinusButton_Click;
+
+                    Button moreButton = new Button
+                    {
+                        Content = "...",
+                        Tag = card,
+                        Margin = new Thickness(0),
+                        Padding = new Thickness(10)
+                    };
                     // Add buttons to the stack panel
                     
                     cardButtonPanel.Children.Add(cardButton);
+                    cardButtonPanel.Children.Add(minusButton);
                     cardButtonPanel.Children.Add(plusButton);
                     cardButtonPanel.Children.Add(deleteButton);
+                    cardButtonPanel.Children.Add(moreButton);
 
                     // Add the stack panel to the parent container
                     CardButtonsPanel.Children.Add(cardButtonPanel);
@@ -114,6 +135,30 @@ namespace CardWizardWPF
                 card.AmountInDeck += 1;
                 card.SaveAttributetoFile(card.AmountInDeck, "AmountInDeck");
                 Manager_Load_Card_Buttons();
+            }
+
+        }
+        private ContextMenu CardMoreButton_ContextMenu()
+        {
+            ContextMenu menu = new ContextMenu();
+            MenuItem DailyCardOption = new MenuItem
+            {
+                Header = "Submit to Featured card",
+            };
+
+            return menu;
+
+        }
+        private void CardMinusButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is Card card)
+            {
+                if(card.AmountInDeck > 0)
+                {
+                    card.AmountInDeck -= 1;
+                    card.SaveAttributetoFile(card.AmountInDeck, "AmountInDeck");
+                    Manager_Load_Card_Buttons();
+                }
             }
 
         }

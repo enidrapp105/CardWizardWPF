@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LiteDB;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +27,7 @@ namespace CardWizardWPF
     public partial class DefaultPage : Page
     {
         private const string DecksFolder = "CardWizardDecks";
+        private static string DbPath = "cards.db";
         private Deck? selected_deck;
         private List<Deck>? decks;
         public DefaultPage()
@@ -33,6 +35,7 @@ namespace CardWizardWPF
             selected_deck = null;
             decks = new List<Deck>();
             InitializeComponent();
+            LoadCardOfTheDay();
             LoadDeckList();
             LoadDeckButtons();
 
@@ -204,5 +207,48 @@ namespace CardWizardWPF
                 MessageBox.Show("Please select a deck.", "Error");
             }
         }
+
+        private void LoadCardOfTheDay()
+        {
+            var card = GetCardOfTheDay();
+            if (card != null && File.Exists(card.ImagePath))
+            {
+                CardOfTheDayLabel.Content = $"Card of the Day - {card.CardName} - {card.AddedDate:MMMM dd, yyyy}";
+                CardOfTheDayImage.Source = new BitmapImage(new Uri(card.ImagePath, UriKind.Absolute));
+            }
+            else
+            {
+                CardOfTheDayLabel.Content = "No Card Available";
+            }
+        }
+
+        private Card_Model GetCardOfTheDay()
+        {
+            using (var db = new LiteDatabase(DbPath))
+            {
+                var cards = db.GetCollection<Card_Model>("cards");
+                var today = DateTime.Today;
+                var card = cards.FindOne(c => c.AddedDate >= today);
+
+                if (card == null)
+                {
+                    var allCards = cards.FindAll().ToList();
+                    if (allCards.Count > 0)
+                    {
+                        var random = new Random();
+                        card = allCards[random.Next(allCards.Count)];
+                    }
+                }
+                return card;
+            }
+        }
+    }
+    public class Card_Model
+    {
+        public int Id { get; set; } // Auto-incremented ID
+        public string ImagePath { get; set; } // Path to the card image
+        public string CardName { get; set; }
+        public DateTime AddedDate { get; set; } // Date added
+
     }
 }

@@ -23,7 +23,6 @@ namespace CardWizardWPF
 
             otherZones = new List<string>();
             SearchResults = new List<SearchableImage>();
-            MessageBox.Show($"Deck Attributes Count: {_deckTesterPage.deck.Attributes?.Count ?? 0}");
             LoadAttributeButtons();
         }
         private void HandleCardMove(SearchableImage card, string action)

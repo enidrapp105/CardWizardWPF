@@ -72,7 +72,10 @@ namespace CardWizardWPF
             };
             Button.Click += (sender, e) => OpenCardZoneWindow(zonename);
             CommandBar.Children.Add(Button);
-
+            if(searchDialog != null)
+            {
+                searchDialog.otherZones = cardZones.Keys.ToList();
+            }
         }
         private void UpdateZones()
         {
@@ -183,6 +186,65 @@ namespace CardWizardWPF
                     break;
             }
             UpdateZones();
+        }
+        private void SearcherHandleCardAction(SearchableImage card, string action)
+        {
+            bool shuffle = false;
+            // Move card based on the action
+            switch (action)
+            {
+                case "TopDeck":
+                    testerdeck.Remove(card);
+                    Move_card_to_deck(card, "top"); // Assume Deck is a List<Image>
+                    break;
+                case "BottomDeck":
+                    testerdeck.Remove(card);
+                    Move_card_to_deck(card, "bottom"); // Assume Deck is a List<Image>
+                    break;
+                case "Field":
+                    testerdeck.Remove(card);
+                    shuffle = true;
+                    Image newImage = new Image
+                    {
+                        Source = card.image.Source, // Copy the card's image
+                        Width = card.image.Width > 0 ? card.image.Width : 100,   // Default width
+                        Height = card.image.Height > 0 ? card.image.Height : 150 // Default height
+                    };
+                    newImage.Tag = card;
+                    // Add mouse event handlers
+                    newImage.MouseLeftButtonDown += Element_LeftMouseDown;
+                    newImage.MouseRightButtonDown += Element_RightMouseDown;
+                    newImage.MouseMove += Element_MouseMoved;
+                    newImage.MouseUp += Element_MouseUp;
+
+                    // Get mouse position relative to the Canvas
+                    Point mousePos = Mouse.GetPosition(field);
+
+                    // Set the image at the cursor position with an offset
+                    Canvas.SetLeft(newImage, 200);  // Fixed X position
+                    Canvas.SetTop(newImage, 300);
+
+                    // Add the image to the Canvas (field)
+                    field.Children.Add(newImage);
+                    break;
+                default:
+                    foreach (var cardZoneEntry in cardZones)
+                    {
+                        // Check if the card exists in this zone's cards
+                        if (cardZoneEntry.Value.Cards.Contains(card))
+                        {
+                            cardZoneEntry.Value.Cards.Remove(card);
+                            break;
+                        }
+                    }
+                    cardZones[action].Cards.Add(card);
+                    break;
+            }
+            UpdateZones();
+            if (shuffle)
+            {
+                ShuffleTesterDeck();
+            }
         }
         private void LoadCardtofield(SearchableImage card)
         {
@@ -360,52 +422,6 @@ namespace CardWizardWPF
                 rotateTransform.Angle += 90;
             }
         }
-        private void SearcherHandleCardAction(SearchableImage card, string action)
-        {
-            bool shuffle = false;
-            // Move card based on the action
-            switch (action)
-            {
-                case "TopDeck":
-                    testerdeck.Remove(card);
-                    Move_card_to_deck(card, "top"); // Assume Deck is a List<Image>
-                    break;
-                case "BottomDeck":
-                    testerdeck.Remove(card);
-                    Move_card_to_deck(card, "bottom"); // Assume Deck is a List<Image>
-                    break;
-                case "Field":
-                    testerdeck.Remove(card);
-                    shuffle = true;
-                    Image newImage = new Image
-                    {
-                        Source = card.image.Source, // Copy the card's image
-                        Width = card.image.Width > 0 ? card.image.Width : 100,   // Default width
-                        Height = card.image.Height > 0 ? card.image.Height : 150 // Default height
-                    };
-                    newImage.Tag = card;
-                    // Add mouse event handlers
-                    newImage.MouseLeftButtonDown += Element_LeftMouseDown;
-                    newImage.MouseRightButtonDown += Element_RightMouseDown;
-                    newImage.MouseMove += Element_MouseMoved;
-                    newImage.MouseUp += Element_MouseUp;
-
-                    // Get mouse position relative to the Canvas
-                    Point mousePos = Mouse.GetPosition(field);
-
-                    // Set the image at the cursor position with an offset
-                    Canvas.SetLeft(newImage, 200);  // Fixed X position
-                    Canvas.SetTop(newImage, 300);
-
-                    // Add the image to the Canvas (field)
-                    field.Children.Add(newImage);
-                    break;
-            }
-            if(shuffle)
-            {
-                ShuffleTesterDeck();
-            }
-        }
         private void Tester_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             foreach (var zone in cardZones.Values.ToList())
@@ -539,6 +555,7 @@ namespace CardWizardWPF
                     {
                         searchDialog = new SearchDialog(this);
                         searchDialog.CardActionRequested += SearcherHandleCardAction;
+                        searchDialog.otherZones = cardZones.Keys.ToList();
                         searchDialog.Show();
 
                     };
@@ -625,6 +642,21 @@ namespace CardWizardWPF
 
                 // Add the image to the Canvas
                 field.Children.Add(newImage);
+            }
+        }
+        private void Tester_Create_Zone_Button_Click(object sender, RoutedEventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox("What is the name of the Zone?", "Name", "new zone");
+            List<string> notallowedzonenames = new List<string>{"BottomDeck", "TopDeck", "Field", "Hand", "Discard"};
+            List<string> existingzones = cardZones.Keys.ToList();
+            if (!notallowedzonenames.Contains(input) && !existingzones.Contains(input))
+            {
+                InitCardZone(input);
+                OpenCardZoneWindow(input);
+            }
+            else
+            {
+                MessageBox.Show("Zone name is not allowed or already exists", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }
