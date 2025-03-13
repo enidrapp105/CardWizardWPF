@@ -111,8 +111,9 @@ namespace CardWizardWPF
                         Margin = new Thickness(0),
                         Padding = new Thickness(10)
                     };
+                    moreButton.ContextMenu = CardMoreButton_ContextMenu(card);
                     // Add buttons to the stack panel
-                    
+
                     cardButtonPanel.Children.Add(cardButton);
                     cardButtonPanel.Children.Add(minusButton);
                     cardButtonPanel.Children.Add(plusButton);
@@ -128,6 +129,32 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred while loading card buttons: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void addToFeaturedcards(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item && item.Tag is Card card)
+            {
+                string thumbnailpath = Path.Combine(card.FolderPath, "image/thumbnail.png");
+                var newCard = new Card_Model
+                {
+                    ImagePath = thumbnailpath,
+                    CardName = card.Name,
+                    AddedDate = DateTime.Today
+                };
+
+                var cards = DatabaseManager.GetCardsCollection();
+                var result = cards.Insert(newCard);
+                if (result == null)
+                {
+                    MessageBox.Show("Failed to insert card into database.");
+                }
+                else
+                {
+                    MessageBox.Show("Card inserted successfully!");
+                }
+            }
+        }
+
         private void CardPlusButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is Card card)
@@ -138,14 +165,16 @@ namespace CardWizardWPF
             }
 
         }
-        private ContextMenu CardMoreButton_ContextMenu()
+        private ContextMenu CardMoreButton_ContextMenu(Card card)
         {
             ContextMenu menu = new ContextMenu();
             MenuItem DailyCardOption = new MenuItem
             {
-                Header = "Submit to Featured card",
+                Header = "Submit to Featured cards",
+                Tag = card
             };
-
+            DailyCardOption.Click += addToFeaturedcards;
+            menu.Items.Add(DailyCardOption);
             return menu;
 
         }
