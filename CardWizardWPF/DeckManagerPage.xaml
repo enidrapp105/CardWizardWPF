@@ -35,6 +35,7 @@
             <Button Content="New Card" Width=" 200" Margin="5" Click="Manager_New_Card_Button_Click"/>
             <Button Content="Templates" Width="100" Margin="5" Click="TemplateButton_Click"/>
             <Button Content="Create PDF" Width="100" Margin="5" Click="Manager_Create_PDF_Button_Click"/>
+            <Button Content="Create Rules" Width="100" Margin="5" Click="Manager_Create_Rules_Button_Click"/>
             <Label Name="Deckname" Content="" Margin="5" FontSize="20"/>
         </StackPanel>
     </Grid>

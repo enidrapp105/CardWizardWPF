@@ -82,4 +82,20 @@ namespace CardWizardWPF
             _mainWindow.SetContent(new TemplateCreatorPage(deck));
         }
     }
+
+    public class RuleObjectCreatorState : IUserState
+    {
+        private MainWindow _mainWindow;
+        public void SetContext(MainWindow mainWindow)
+        {
+            _mainWindow = mainWindow;
+        }
+
+        public void Navigate(Deck deck, Card card)
+        {
+            // Replace the entire content of the window
+            _mainWindow.SetContent(new RuleObjectCreatorPage(deck, card));
+        }
+    }
+
 }

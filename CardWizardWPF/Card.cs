@@ -24,6 +24,9 @@ namespace CardWizardWPF
         public Image Image { get; set; }
         public List<String> Attributes { get; set; }
 
+        public bool isRuleObject { get; set; }
+        public double ruleWidth { get; set; }
+        public double ruleHeight { get; set; }
         public void SaveAttributetoFile(int num, string type)
         {
             string jsonFilePath = Path.Combine(FolderPath, "cardinfo.json");

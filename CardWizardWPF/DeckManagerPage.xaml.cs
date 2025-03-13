@@ -450,8 +450,38 @@ namespace CardWizardWPF
                 MessageBox.Show("Error creating PDF: " + ex.Message);
             }
         }
+        private void Manager_Create_Rules_Button_Click(object sender, RoutedEventArgs e)
+        {
+            Card ruleobject = new Card();
+            ruleobject.isRuleObject = true;
+            var dialog = new RulesSelectionDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                if (dialog.SelectedOption == "Rules Card")
+                {
+                    ruleobject.ruleHeight = deck.CardHeight;
+                    ruleobject.ruleWidth = deck.CardWidth;
+                }
+                else
+                {
+                    double paperWidthCm = 21.59;  // 21.59 cm
+                    double paperHeightCm = 27.94; // 27.94 cm
 
+                    // Apply the scale factor to maintain aspect ratio
+                    ruleobject.ruleWidth = paperWidthCm;
+                    ruleobject.ruleHeight = paperHeightCm;
+                }
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.TransitionTo(new RuleObjectCreatorState(), ruleobject, this.deck);
+                }
+                else
+                {
+                    MessageBox.Show("Unable to navigate to rule creator.", "Error");
+                }
 
+            }
+        }
 
         private string GetSaveFilePath()
         {
