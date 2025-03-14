@@ -18,6 +18,7 @@ using PdfSharp.Pdf;
 using PdfSharp.Drawing;
 using Path = System.IO.Path;
 using System.Reflection.Metadata;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 
 namespace CardWizardWPF
@@ -35,9 +36,89 @@ namespace CardWizardWPF
             InitializeComponent();
             Deckname.Content = this.deck.Deckname;
             Manager_Load_Card_Buttons();
+            Manager_Load_Rule_Buttons();
+        }
+        private void Manager_Load_Rule_Buttons()
+        {
+            string folderPath = Path.Combine(deck.FolderPath, "rules");
+            RuleButtonsPanel.Children.Clear();
 
+            if (!Directory.Exists(folderPath))
+            {
+                MessageBox.Show("Rule folder does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            List<string> ruleDirectories = new List<string>(Directory.GetDirectories(folderPath));
+
+            foreach (string ruleDir in ruleDirectories)
+            {
+                string ruleName = Path.GetFileName(ruleDir);
+                StackPanel stackPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                };
+                Button ruleButton = new Button
+                {
+                    Content = ruleName,
+                    Tag = ruleDir,
+                    Margin = new Thickness(5),
+                    Padding = new Thickness(10),
+                    Width = 100
+                };
+                Button deleteButton = new Button
+                {
+                    Content = "-",
+                    Tag = ruleDir,
+                    Margin = new Thickness(5),
+                    Padding = new Thickness(10),
+
+                };
+
+                ruleButton.Click += RuleButton_Click;
+                deleteButton.Click += RuleDeleteButton_Click;
+                stackPanel.Children.Add(ruleButton);
+                stackPanel.Children.Add(deleteButton);
+                RuleButtonsPanel.Children.Add(stackPanel);
+            }
         }
 
+        private void RuleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button clickedButton && clickedButton.Tag is string)
+            {
+
+            }
+        }
+
+        private void RuleDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button clickedButton && clickedButton.Tag is string folderPath)
+            {
+                MessageBoxResult result = MessageBox.Show(
+                    $"Are you sure you want to delete the rule folder:\n{folderPath}?",
+                    "Confirm Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning
+                    );
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        Directory.Delete(folderPath, true); // true ensures deletion of non-empty folders
+                        MessageBox.Show("Rule folder deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // Optionally, refresh the UI after deletion
+                        Manager_Load_Rule_Buttons();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error deleting folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
         private void Manager_Load_Card_Buttons()
         {
             try

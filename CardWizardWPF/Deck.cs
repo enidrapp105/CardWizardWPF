@@ -20,6 +20,7 @@ namespace CardWizardWPF
         public int CardCount { get; set; }
 
         public List<Card> Cards;
+        public List<Card> Rules;
         public List<String> Attributes { get; set; }
 
 

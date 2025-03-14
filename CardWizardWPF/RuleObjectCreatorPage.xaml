@@ -17,7 +17,7 @@
             <RowDefinition Height="Auto" />
             <!-- Buttons -->
         </Grid.RowDefinitions>
-        <Label Content="Template Creator"/>
+        <Label Content="Rule Creator"/>
         <StackPanel  Name="commandBar" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Row="1" Margin="0,0,35,0">
 
         </StackPanel>
@@ -26,8 +26,8 @@
 
         </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="3" Margin="10">
-            <Button Content="Back" Width="200" Margin="5" Click="Template_Back_Button_Click"/>
-            <Button Content="Save Rule Object" Width="200" Margin="5"/>
+            <Button Content="Back" Width="200" Margin="5" Click="Rule_Back_Button_Click"/>
+            <Button Content="Save Rule Object" Width="200" Margin="5" Click="Rule_Save_Button_Click"/>
         </StackPanel>
     </Grid>
 </Page>

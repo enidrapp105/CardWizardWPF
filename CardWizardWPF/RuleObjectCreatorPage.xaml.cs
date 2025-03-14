@@ -30,7 +30,7 @@ namespace CardWizardWPF
     {
         Deck deck;
         Card card;
-        Canvas templatecanvas;
+        Canvas rulecanvas;
         Utils util;
         private double imageOffsetX, imageOffsetY;
         private bool isImageDragging = false;
@@ -41,7 +41,7 @@ namespace CardWizardWPF
             this.deck = deck;
             InitializeComponent();
 
-            templatecanvas = new Canvas
+            rulecanvas = new Canvas
             {
                 Name = "cardcanvas",
                 Height = util.CmToDeviceIndependentUnits(card.ruleHeight),
@@ -54,14 +54,14 @@ namespace CardWizardWPF
             commandBar.Children.Add(CreateImageButton());
             commandBar.Children.Add(CreateBorderButton());
 
-            canvasholder.Children.Add(templatecanvas);
+            canvasholder.Children.Add(rulecanvas);
         }
 
-        private void Template_Save_Button_Click(object sender, RoutedEventArgs e)
+        private void Rule_Save_Button_Click(object sender, RoutedEventArgs e)
         {
             Window nameprompt = new Window
             {
-                Title = "Template Name?",
+                Title = "Rule object Name?",
                 Width = 300,
                 Height = 200,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen
@@ -85,11 +85,14 @@ namespace CardWizardWPF
             {
                 if (!string.IsNullOrWhiteSpace(textprompt.Text))
                 {
+                    string filename = textprompt.Text + ".png";
                     string folderpath = deck.FolderPath;
-                    string templatesfolderpath = Path.Combine(folderpath, "templates");
+                    string templatesfolderpath = Path.Combine(folderpath, "rules");
                     string templatedirectory = Path.Combine(templatesfolderpath, textprompt.Text);
                     string templateassetsfolder = Path.Combine(templatedirectory, "assets");
-                    string templateinfo = Path.Combine(templatedirectory, "templateinfo.json");
+                    string templateinfo = Path.Combine(templatedirectory, "ruleinfo.json");
+                    string rulesimagedirectory = Path.Combine(templatedirectory, "image");
+                    string thumbnailPath = Path.Combine(rulesimagedirectory, filename);
 
                     if (!Directory.Exists(templatesfolderpath))
                     {
@@ -103,9 +106,55 @@ namespace CardWizardWPF
                     {
                         Directory.CreateDirectory(templateassetsfolder);
                     }
+                    if (!Directory.Exists(rulesimagedirectory))
+                    {
+                        Directory.CreateDirectory(rulesimagedirectory);
+                    }
+
+                    // Get the size of the canvas
+                    double canvasWidth = rulecanvas.ActualWidth;
+                    double canvasHeight = rulecanvas.ActualHeight;
+
+                    // Ensure the canvas size is valid
+                    if (canvasWidth <= 0 || canvasHeight <= 0)
+                    {
+                        MessageBox.Show("Canvas size is invalid. Please ensure it has proper dimensions.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // Create a RenderTargetBitmap matching the canvas size
+                    var renderTargetBitmap = new RenderTargetBitmap(
+                        (int)Math.Ceiling(canvasWidth),
+                        (int)Math.Ceiling(canvasHeight),
+                        96, // DPI X
+                        96, // DPI Y
+                        PixelFormats.Pbgra32
+                    );
+
+                    //// Render the exact bounds of the canvas
+                    rulecanvas.Measure(new Size(canvasWidth, canvasHeight)); // this rearanges the canvas's position visually
+                    rulecanvas.Arrange(new Rect(new Size(canvasWidth, canvasHeight)));
+                    renderTargetBitmap.Render(rulecanvas);
+                    canvasholder.Children.Clear(); //clear the holder
+                    canvasholder.Children.Add(rulecanvas); //readd the canvas to reset it's position
+                    try
+                    {                                      // Save the bitmap as a PNG file
+                   
+                        PngBitmapEncoder encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+                        using (var fileStream = new FileStream(thumbnailPath, FileMode.Create))
+                        {
+                            encoder.Save(fileStream);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to save thumbnail: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                     List<Dictionary<string, object>> elementsData = new List<Dictionary<string, object>>();
 
-                    foreach (UIElement element in templatecanvas.Children)
+                    foreach (UIElement element in rulecanvas.Children)
                     {
                         if (element is Image image)
                         {
@@ -175,7 +224,7 @@ namespace CardWizardWPF
 
         }
 
-        private void Template_Back_Button_Click(object sender, RoutedEventArgs e)
+        private void Rule_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)
             {
@@ -219,12 +268,12 @@ namespace CardWizardWPF
         {
             Rectangle borderrectangle = new Rectangle
             {
-                Width = templatecanvas.ActualWidth,
-                Height = templatecanvas.ActualHeight,
+                Width = rulecanvas.ActualWidth,
+                Height = rulecanvas.ActualHeight,
                 Stroke = Brushes.Black,
                 StrokeThickness = 3
             };
-            templatecanvas.Children.Add(borderrectangle);
+            rulecanvas.Children.Add(borderrectangle);
         }
         private void ImageButton_Click(object sender, RoutedEventArgs e)
         {
@@ -281,7 +330,7 @@ namespace CardWizardWPF
                 image.MouseUp += Element_MouseUp;
                 image.MouseRightButtonDown += Element_MouseRightButtonDown;
                 // Add the Image control to the Canvas
-                templatecanvas.Children.Add(image);
+                rulecanvas.Children.Add(image);
             }
         }
         //**********************************************************
@@ -351,7 +400,7 @@ namespace CardWizardWPF
                     textBlock.MouseUp += Element_MouseUp;
                     textBlock.MouseRightButtonDown += Element_MouseRightButtonDown;
                     // Add the TextBlock to the Canvas
-                    templatecanvas.Children.Add(textBlock);
+                    rulecanvas.Children.Add(textBlock);
                 }
                 inputWindow.Close();
             };
@@ -366,7 +415,7 @@ namespace CardWizardWPF
         //****************************************************************************
         private void Element_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is UIElement element && templatecanvas != null)
+            if (sender is UIElement element && rulecanvas != null)
             {
                 // Check if the right mouse button is pressed
                 if (e.ChangedButton == MouseButton.Right)
@@ -381,17 +430,17 @@ namespace CardWizardWPF
                 element.CaptureMouse();
 
                 // Get the current mouse position relative to the canvas
-                Point pointerPosition = e.GetPosition(templatecanvas);
+                Point pointerPosition = e.GetPosition(rulecanvas);
                 imageOffsetX = pointerPosition.X - Canvas.GetLeft(element);
                 imageOffsetY = pointerPosition.Y - Canvas.GetTop(element);
             }
         }
         private void Element_MouseMoved(object sender, MouseEventArgs e)
         {
-            if (isImageDragging && sender is UIElement element && templatecanvas != null)
+            if (isImageDragging && sender is UIElement element && rulecanvas != null)
             {
                 // Get the current mouse position relative to the canvas
-                Point pointerPosition = e.GetPosition(templatecanvas);
+                Point pointerPosition = e.GetPosition(rulecanvas);
 
                 double newX = pointerPosition.X - imageOffsetX;
                 double newY = pointerPosition.Y - imageOffsetY;
@@ -518,9 +567,9 @@ namespace CardWizardWPF
 
         private void RemoveElement(UIElement element)
         {
-            if (templatecanvas != null && element != null)
+            if (rulecanvas != null && element != null)
             {
-                templatecanvas.Children.Remove(element);
+                rulecanvas.Children.Remove(element);
             }
         }
 
