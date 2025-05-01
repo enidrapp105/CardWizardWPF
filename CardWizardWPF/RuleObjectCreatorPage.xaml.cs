@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Xceed.Wpf.Toolkit;
+using static CardWizardWPF.CardCreatorPage;
 using MessageBox = System.Windows.MessageBox;
 using Path = System.IO.Path;
 using WindowStartupLocation = System.Windows.WindowStartupLocation;
@@ -39,23 +40,43 @@ namespace CardWizardWPF
         {
             util = new Utils();
             this.deck = deck;
+            this.card = card;
             InitializeComponent();
 
-            rulecanvas = new Canvas
+            if (card.isRuleInitialized)
             {
-                Name = "cardcanvas",
-                Height = util.CmToDeviceIndependentUnits(card.ruleHeight),
-                Width = util.CmToDeviceIndependentUnits(card.ruleWidth),
-                Background = new SolidColorBrush(Colors.White),
-            };
-
+                rulecanvas = new Canvas
+                {
+                    Name = "cardcanvas",
+                    Height = card.ruleHeight,
+                    Width = card.ruleWidth,
+                    Background = new SolidColorBrush(Colors.White),
+                };
+            }
+            else
+            {
+                rulecanvas = new Canvas
+                {
+                    Name = "cardcanvas",
+                    Height = util.CmToDeviceIndependentUnits(card.ruleHeight),
+                    Width = util.CmToDeviceIndependentUnits(card.ruleWidth),
+                    Background = new SolidColorBrush(Colors.White),
+                };
+            }
 
             commandBar.Children.Add(CreateTextButton());
             commandBar.Children.Add(CreateImageButton());
             commandBar.Children.Add(CreateBorderButton());
 
             canvasholder.Children.Add(rulecanvas);
+            if(card.isRuleInitialized) 
+            {
+                reconstruct_canvas_from_file();
+            }
         }
+
+
+
 
         private void Rule_Save_Button_Click(object sender, RoutedEventArgs e)
         {
@@ -191,7 +212,7 @@ namespace CardWizardWPF
                                 { "PositionX", Canvas.GetLeft(textBlock) },
                                 { "PositionY", Canvas.GetTop(textBlock) },
                                 { "FontSize", textBlock.FontSize },
-                                { "Color", textBlock.Foreground.ToString() }
+                                { "Color", textBlock.Foreground.ToString() },
                             });
                         }
                         else if (element is Rectangle rectangle)
@@ -223,7 +244,101 @@ namespace CardWizardWPF
             nameprompt.ShowDialog();
 
         }
+        private void reconstruct_canvas_from_file()
+        {
+            try
+            {
+                string cardFolderPath = card.FolderPath;
+                string jsonFilePath = Path.Combine(cardFolderPath, "ruleinfo.json");
 
+                // Check if JSON file exists
+                if (!File.Exists(jsonFilePath))
+                {
+                    return; // No saved data to load
+                }
+
+                // Read JSON content
+                string jsonText = File.ReadAllText(jsonFilePath);
+
+                // Deserialize JSON into a list of CanvasItem objects
+                var canvasItems = JsonSerializer.Deserialize<List<CanvasItem>>(jsonText);
+
+                if (canvasItems == null || canvasItems.Count == 0)
+                {
+                    return; // No valid data to load
+                }
+
+                // Clear the existing canvas
+                rulecanvas.Children.Clear();
+
+                // Iterate over the canvas items and reconstruct them
+                foreach (var item in canvasItems)
+                {
+                    if (item.Type == "Image")
+                    {
+                        string imagePath = Path.Combine(cardFolderPath, item.Source);
+                        if (File.Exists(imagePath))
+                        {
+                            BitmapImage bitmap = new BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad; // Ensures file is not locked
+                            bitmap.EndInit();
+
+                            Image image = new Image
+                            {
+                                Source = bitmap,
+                                Width = item.Width,
+                                Height = item.Height
+                            };
+                            image.MouseDown += Element_MouseDown;
+                            image.MouseUp += Element_MouseUp;
+                            image.MouseMove += Element_MouseMoved;
+                            image.MouseRightButtonDown += Element_MouseRightButtonDown;
+                            Canvas.SetLeft(image, item.PositionX);
+                            Canvas.SetTop(image, item.PositionY);
+
+                            rulecanvas.Children.Add(image);
+                        }
+                    }
+                    else if (item.Type == "Text")
+                    {
+                        TextBlock textBlock = new TextBlock
+                        {
+                            Text = item.Content,
+                            FontSize = item.FontSize,
+                            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color))
+                        };
+                        textBlock.MouseDown += Element_MouseDown;
+                        textBlock.MouseUp += Element_MouseUp;
+                        textBlock.MouseMove += Element_MouseMoved;
+                        textBlock.MouseRightButtonDown += Element_MouseRightButtonDown;
+                        Canvas.SetLeft(textBlock, item.PositionX);
+                        Canvas.SetTop(textBlock, item.PositionY);
+
+                        rulecanvas.Children.Add(textBlock);
+                    }
+                    else if (item.Type == "Rectangle")
+                    {
+                        Rectangle rectangle = new Rectangle
+                        {
+                            Width = item.Width,
+                            Height = item.Height,
+                            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString(item.Color)),
+                            StrokeThickness = item.StrokeWidth
+                        };
+                        Canvas.SetLeft(rectangle, item.PositionX);
+                        Canvas.SetTop(rectangle, item.PositionY);
+                        rulecanvas.Children.Add(rectangle);
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error reconstructing canvas: {ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void Rule_Back_Button_Click(object sender, RoutedEventArgs e)
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)

@@ -19,6 +19,7 @@ using PdfSharp.Drawing;
 using Path = System.IO.Path;
 using System.Reflection.Metadata;
 using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
+using System.Text.Json;
 
 
 namespace CardWizardWPF
@@ -82,11 +83,53 @@ namespace CardWizardWPF
                 RuleButtonsPanel.Children.Add(stackPanel);
             }
         }
+        public class RuleInfoItem
+        {
+            public string Type { get; set; }
+            public string Source { get; set; }
+            public double PositionX { get; set; }
+            public double PositionY { get; set; }
+            public double Width { get; set; }
+            public double Height { get; set; }
+        }
         private void RuleButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button clickedButton && clickedButton.Tag is string)
             {
-                
+                string cardFolderPath = clickedButton.Tag.ToString();
+                string jsonFilePath = Path.Combine(cardFolderPath, "ruleinfo.json");
+                double width = 0;
+                double height = 0;
+
+                if (!File.Exists(jsonFilePath))
+                {
+                    return; // No saved data to load
+                }
+
+                string jsonText = File.ReadAllText(jsonFilePath);
+
+                List<RuleInfoItem> ruleItems = JsonSerializer.Deserialize<List<RuleInfoItem>>(jsonText);
+
+                if (ruleItems != null && ruleItems.Count > 0)
+                {
+                    width = ruleItems[0].Width;
+                    height = ruleItems[0].Height;
+                }
+                Card ruleobject = new Card
+                {
+                    isRuleInitialized = true,
+                    FolderPath = cardFolderPath,
+                    ruleWidth = width,
+                    ruleHeight = height,
+                };
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.TransitionTo(new RuleObjectCreatorState(), ruleobject, this.deck);
+                }
+                else
+                {
+                    MessageBox.Show("Unable to navigate to rule creator.", "Error");
+                }
             }
         }
         private void RuleDeleteButton_Click(object sender, RoutedEventArgs e)
@@ -519,7 +562,7 @@ namespace CardWizardWPF
                 pdfDocument.Save(pdfPath);
                 pdfDocument.Close();
 
-                MessageBox.Show($"PDF saved successfully at:\n{pdfPath}");
+                //MessageBox.Show($"PDF saved successfully at:\n{pdfPath}");
             }
             catch (Exception ex)
             {

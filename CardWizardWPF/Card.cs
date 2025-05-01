@@ -23,7 +23,7 @@ namespace CardWizardWPF
         [JsonIgnore]
         public Image Image { get; set; }
         public List<String> Attributes { get; set; }
-
+        public bool isRuleInitialized {  get; set; }
         public bool isRuleObject { get; set; }
         public double ruleWidth { get; set; }
         public double ruleHeight { get; set; }
