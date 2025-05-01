@@ -24,11 +24,14 @@ namespace CardWizardWPF
     /// <summary>
     /// Interaction logic for DefaultPage.xaml
     /// </summary>
+    /// 
+
     public partial class DefaultPage : Page
     {
         private const string DecksFolder = "CardWizardDecks";
         private static string DbPath = "cards.db";
         private Deck? selected_deck;
+        private Button selected_button = null;
         private List<Deck>? decks;
         public DefaultPage()
         {
@@ -71,6 +74,7 @@ namespace CardWizardWPF
             {
                 var button = new Button
                 {
+                    Background = new SolidColorBrush(Colors.White),
                     Content = $"{deck.Deckname} ({deck.CardCount} cards)",
                     Width = 300,
                     Margin = new Thickness(5),
@@ -98,13 +102,24 @@ namespace CardWizardWPF
                 try
                 {
 
+                    if(selected_button != null) 
+                    {
+                        selected_button.Background = new SolidColorBrush(Colors.White);
+                        selected_button = button;
+                        selected_button.Background = new SolidColorBrush(Colors.DarkGray);
+                    }
+                    else 
+                    {
+                        selected_button = button;
+                        selected_button.Background = new SolidColorBrush(Colors.DarkGray);
+                    }
 
                     selected_deck = new Deck();
                     selected_deck.FolderPath = folderPath;
                     selected_deck.Load_Deck_From_File();
+                    
 
-
-                    MessageBox.Show($"Deck '{selected_deck.Deckname}' loaded with {selected_deck.CardCount} cards.", "Deck Loaded");
+                    //MessageBox.Show($"Deck '{selected_deck.Deckname}' loaded with {selected_deck.CardCount} cards.", "Deck Loaded");
                 }
                 catch (JsonException ex)
                 {

@@ -82,15 +82,13 @@ namespace CardWizardWPF
                 RuleButtonsPanel.Children.Add(stackPanel);
             }
         }
-
         private void RuleButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button clickedButton && clickedButton.Tag is string)
             {
-
+                
             }
         }
-
         private void RuleDeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button clickedButton && clickedButton.Tag is string folderPath)
@@ -210,7 +208,6 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred while loading card buttons: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void addToFeaturedcards(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem item && item.Tag is Card card)
@@ -235,7 +232,6 @@ namespace CardWizardWPF
                 }
             }
         }
-
         private void CardPlusButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is Card card)
@@ -347,7 +343,6 @@ namespace CardWizardWPF
                 MessageBox.Show("Unable to navigate back.", "Error");
             }
         }
-
         private void Manager_New_Card_Button_Click(object sender, RoutedEventArgs e)
         {
             Card card = new Card();
@@ -445,80 +440,80 @@ namespace CardWizardWPF
                 PdfPage page = null;
                 XGraphics gfx = null;
 
-                double margin = 10; // Reduced margin to minimize space wastage
-                double spacing = 0;  // Minimal spacing between images
-                double maxWidthPerImage = 180;  // Maximum width per image
-                double maxHeightPerImage = 180; // Maximum height per image
+                // === Sizes from deck in CM ===
+                double cardWidthCm = this.deck.CardWidth;
+                double cardHeightCm = this.deck.CardHeight;
+                double spacingCm = 0.0; // tightly packed
+                double printerSafeMarginCm = 0.5; // Add 1cm margins for printers
 
-                double pageWidth = XUnit.FromPoint(595).Point - (2 * margin); // A4 width minus margins
-                double pageHeight = XUnit.FromPoint(842).Point - (2 * margin); // A4 height minus margins
+                // === Convert cm to PDF points ===
+                double CmToPoints(double cm) => cm * (72.0 / 2.54);
+                double cardWidth = CmToPoints(cardWidthCm);
+                double cardHeight = CmToPoints(cardHeightCm);
+                double spacing = CmToPoints(spacingCm);
+                double safeMargin = CmToPoints(printerSafeMarginCm);
 
-                double x = margin;
-                double y = margin;
-                double maxRowHeight = 0;
-                int imagesOnPage = 0;
+                double pageWidth = XUnit.FromMillimeter(210).Point;
+                double pageHeight = XUnit.FromMillimeter(297).Point;
+
+                // Compute how many cards fit WITHIN printable area
+                double printableWidth = pageWidth - 2 * safeMargin;
+                double printableHeight = pageHeight - 2 * safeMargin;
+
+                // Fit as many as possible horizontally
+                int cardsPerRow = (int)((printableWidth + spacing) / cardWidth);
+                // Then figure out how many rows we can fit vertically
+                int cardsPerColumn = (int)((printableHeight + spacing) / (cardHeight + spacing));
+                int cardsPerPage = cardsPerRow * cardsPerColumn;
+
+                // Horizontal layout uses left margin only; vertical layout is centered
+                // Now compute grid actual width and height
+                double gridWidth = cardsPerRow * cardWidth + (cardsPerRow - 1) * spacing;
+                double gridHeight = cardsPerColumn * cardHeight + (cardsPerColumn - 1) * spacing;
+
+                // Start from top-left corner inside safe margins
+                double startX = safeMargin;
+                double startY = safeMargin;
+
+
+
 
                 for (int i = 0; i < imagePaths.Count; i++)
                 {
-                    if (imagesOnPage == 0 || page == null)
+                    if (i % cardsPerPage == 0)
                     {
-                        // Create a new page if needed
                         page = pdfDocument.AddPage();
                         gfx = XGraphics.FromPdfPage(page);
-                        x = margin;
-                        y = margin;
-                        maxRowHeight = 0;
-                        imagesOnPage = 0;
                     }
+
+                    int indexOnPage = i % cardsPerPage;
+                    int row = indexOnPage / cardsPerRow;
+                    int col = indexOnPage % cardsPerRow;
+
+                    double x = startX + col * (cardWidth + spacing);
+                    double y = startY + row * (cardHeight + spacing);
 
                     XImage img = XImage.FromFile(imagePaths[i]);
-
-                    // Maintain aspect ratio
                     double aspectRatio = (double)img.PixelWidth / img.PixelHeight;
-                    double drawWidth = maxWidthPerImage;
-                    double drawHeight = maxHeightPerImage;
 
-                    if (aspectRatio > 1) // Landscape
-                    {
-                        drawHeight = maxWidthPerImage / aspectRatio;
-                    }
-                    else // Portrait
-                    {
-                        drawWidth = maxHeightPerImage * aspectRatio;
-                    }
+                    double drawWidth = cardWidth;
+                    double drawHeight = cardHeight;
 
-                    // Move to the next row if the image doesn't fit
-                    if (x + drawWidth > pageWidth)
+                    if (aspectRatio > 1)
                     {
-                        x = margin;
-                        y += maxRowHeight + spacing;
-                        maxRowHeight = 0;
+                        drawHeight = cardWidth / aspectRatio;
+                        drawWidth = cardWidth;
+                    }
+                    else
+                    {
+                        drawWidth = cardHeight * aspectRatio;
+                        drawHeight = cardHeight;
                     }
 
-                    if (y + drawHeight > pageHeight)
-                    {
-                        // Create a new page and retry placing the image
-                        page = pdfDocument.AddPage();
-                        gfx = XGraphics.FromPdfPage(page);
-                        x = margin;
-                        y = margin;
-                        maxRowHeight = 0;
-                        imagesOnPage = 0;
-                    }
+                    double offsetX = (cardWidth - drawWidth) / 2;
+                    double offsetY = (cardHeight - drawHeight) / 2;
 
-                    // Draw the image
-                    gfx.DrawImage(img, x, y, drawWidth, drawHeight);
-
-                    // Update positioning
-                    x += drawWidth + spacing;
-                    maxRowHeight = Math.Max(maxRowHeight, drawHeight);
-                    imagesOnPage++;
-
-                    // Move to a new page if needed
-                    if (y + maxRowHeight > pageHeight)
-                    {
-                        page = null; // Forces a new page in the next loop
-                    }
+                    gfx.DrawImage(img, x + offsetX, y + offsetY, drawWidth, drawHeight);
                 }
 
                 pdfDocument.Save(pdfPath);
@@ -531,6 +526,9 @@ namespace CardWizardWPF
                 MessageBox.Show("Error creating PDF: " + ex.Message);
             }
         }
+
+
+
         private void Manager_Create_Rules_Button_Click(object sender, RoutedEventArgs e)
         {
             Card ruleobject = new Card();
