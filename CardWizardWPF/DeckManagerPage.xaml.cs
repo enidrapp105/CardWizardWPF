@@ -18,6 +18,8 @@ using PdfSharp.Pdf;
 using PdfSharp.Drawing;
 using Path = System.IO.Path;
 using System.Reflection.Metadata;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
+using System.Text.Json;
 
 
 namespace CardWizardWPF
@@ -35,9 +37,129 @@ namespace CardWizardWPF
             InitializeComponent();
             Deckname.Content = this.deck.Deckname;
             Manager_Load_Card_Buttons();
-
+            Manager_Load_Rule_Buttons();
         }
+        private void Manager_Load_Rule_Buttons()
+        {
+            string folderPath = Path.Combine(deck.FolderPath, "rules");
+            RuleButtonsPanel.Children.Clear();
 
+            if (!Directory.Exists(folderPath))
+            {
+                MessageBox.Show("Rule folder does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            List<string> ruleDirectories = new List<string>(Directory.GetDirectories(folderPath));
+
+            foreach (string ruleDir in ruleDirectories)
+            {
+                string ruleName = Path.GetFileName(ruleDir);
+                StackPanel stackPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                };
+                Button ruleButton = new Button
+                {
+                    Content = ruleName,
+                    Tag = ruleDir,
+                    Margin = new Thickness(5),
+                    Padding = new Thickness(10),
+                    Width = 100
+                };
+                Button deleteButton = new Button
+                {
+                    Content = "-",
+                    Tag = ruleDir,
+                    Margin = new Thickness(5),
+                    Padding = new Thickness(10),
+
+                };
+
+                ruleButton.Click += RuleButton_Click;
+                deleteButton.Click += RuleDeleteButton_Click;
+                stackPanel.Children.Add(ruleButton);
+                stackPanel.Children.Add(deleteButton);
+                RuleButtonsPanel.Children.Add(stackPanel);
+            }
+        }
+        public class RuleInfoItem
+        {
+            public string Type { get; set; }
+            public string Source { get; set; }
+            public double PositionX { get; set; }
+            public double PositionY { get; set; }
+            public double Width { get; set; }
+            public double Height { get; set; }
+        }
+        private void RuleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button clickedButton && clickedButton.Tag is string)
+            {
+                string cardFolderPath = clickedButton.Tag.ToString();
+                string jsonFilePath = Path.Combine(cardFolderPath, "ruleinfo.json");
+                double width = 0;
+                double height = 0;
+
+                if (!File.Exists(jsonFilePath))
+                {
+                    return; // No saved data to load
+                }
+
+                string jsonText = File.ReadAllText(jsonFilePath);
+
+                List<RuleInfoItem> ruleItems = JsonSerializer.Deserialize<List<RuleInfoItem>>(jsonText);
+
+                if (ruleItems != null && ruleItems.Count > 0)
+                {
+                    width = ruleItems[0].Width;
+                    height = ruleItems[0].Height;
+                }
+                Card ruleobject = new Card
+                {
+                    isRuleInitialized = true,
+                    FolderPath = cardFolderPath,
+                    ruleWidth = width,
+                    ruleHeight = height,
+                };
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    mainWindow.TransitionTo(new RuleObjectCreatorState(), ruleobject, this.deck);
+                }
+                else
+                {
+                    MessageBox.Show("Unable to navigate to rule creator.", "Error");
+                }
+            }
+        }
+        private void RuleDeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button clickedButton && clickedButton.Tag is string folderPath)
+            {
+                MessageBoxResult result = MessageBox.Show(
+                    $"Are you sure you want to delete the rule folder:\n{folderPath}?",
+                    "Confirm Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning
+                    );
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        Directory.Delete(folderPath, true); // true ensures deletion of non-empty folders
+                        MessageBox.Show("Rule folder deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // Optionally, refresh the UI after deletion
+                        Manager_Load_Rule_Buttons();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error deleting folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
         private void Manager_Load_Card_Buttons()
         {
             try
@@ -129,7 +251,6 @@ namespace CardWizardWPF
                 MessageBox.Show($"An error occurred while loading card buttons: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void addToFeaturedcards(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem item && item.Tag is Card card)
@@ -154,7 +275,6 @@ namespace CardWizardWPF
                 }
             }
         }
-
         private void CardPlusButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is Card card)
@@ -266,7 +386,6 @@ namespace CardWizardWPF
                 MessageBox.Show("Unable to navigate back.", "Error");
             }
         }
-
         private void Manager_New_Card_Button_Click(object sender, RoutedEventArgs e)
         {
             Card card = new Card();
@@ -364,92 +483,95 @@ namespace CardWizardWPF
                 PdfPage page = null;
                 XGraphics gfx = null;
 
-                double margin = 10; // Reduced margin to minimize space wastage
-                double spacing = 0;  // Minimal spacing between images
-                double maxWidthPerImage = 180;  // Maximum width per image
-                double maxHeightPerImage = 180; // Maximum height per image
+                // === Sizes from deck in CM ===
+                double cardWidthCm = this.deck.CardWidth;
+                double cardHeightCm = this.deck.CardHeight;
+                double spacingCm = 0.0; // tightly packed
+                double printerSafeMarginCm = 0.5; // Add 1cm margins for printers
 
-                double pageWidth = XUnit.FromPoint(595).Point - (2 * margin); // A4 width minus margins
-                double pageHeight = XUnit.FromPoint(842).Point - (2 * margin); // A4 height minus margins
+                // === Convert cm to PDF points ===
+                double CmToPoints(double cm) => cm * (72.0 / 2.54);
+                double cardWidth = CmToPoints(cardWidthCm);
+                double cardHeight = CmToPoints(cardHeightCm);
+                double spacing = CmToPoints(spacingCm);
+                double safeMargin = CmToPoints(printerSafeMarginCm);
 
-                double x = margin;
-                double y = margin;
-                double maxRowHeight = 0;
-                int imagesOnPage = 0;
+                double pageWidth = XUnit.FromMillimeter(210).Point;
+                double pageHeight = XUnit.FromMillimeter(297).Point;
+
+                // Compute how many cards fit WITHIN printable area
+                double printableWidth = pageWidth - 2 * safeMargin;
+                double printableHeight = pageHeight - 2 * safeMargin;
+
+                // Fit as many as possible horizontally
+                int cardsPerRow = (int)((printableWidth + spacing) / cardWidth);
+                // Then figure out how many rows we can fit vertically
+                int cardsPerColumn = (int)((printableHeight + spacing) / (cardHeight + spacing));
+                int cardsPerPage = cardsPerRow * cardsPerColumn;
+
+                // Horizontal layout uses left margin only; vertical layout is centered
+                // Now compute grid actual width and height
+                double gridWidth = cardsPerRow * cardWidth + (cardsPerRow - 1) * spacing;
+                double gridHeight = cardsPerColumn * cardHeight + (cardsPerColumn - 1) * spacing;
+
+                // Start from top-left corner inside safe margins
+                double startX = safeMargin;
+                double startY = safeMargin;
+
+
+
 
                 for (int i = 0; i < imagePaths.Count; i++)
                 {
-                    if (imagesOnPage == 0 || page == null)
+                    if (i % cardsPerPage == 0)
                     {
-                        // Create a new page if needed
                         page = pdfDocument.AddPage();
                         gfx = XGraphics.FromPdfPage(page);
-                        x = margin;
-                        y = margin;
-                        maxRowHeight = 0;
-                        imagesOnPage = 0;
                     }
+
+                    int indexOnPage = i % cardsPerPage;
+                    int row = indexOnPage / cardsPerRow;
+                    int col = indexOnPage % cardsPerRow;
+
+                    double x = startX + col * (cardWidth + spacing);
+                    double y = startY + row * (cardHeight + spacing);
 
                     XImage img = XImage.FromFile(imagePaths[i]);
-
-                    // Maintain aspect ratio
                     double aspectRatio = (double)img.PixelWidth / img.PixelHeight;
-                    double drawWidth = maxWidthPerImage;
-                    double drawHeight = maxHeightPerImage;
 
-                    if (aspectRatio > 1) // Landscape
-                    {
-                        drawHeight = maxWidthPerImage / aspectRatio;
-                    }
-                    else // Portrait
-                    {
-                        drawWidth = maxHeightPerImage * aspectRatio;
-                    }
+                    double drawWidth = cardWidth;
+                    double drawHeight = cardHeight;
 
-                    // Move to the next row if the image doesn't fit
-                    if (x + drawWidth > pageWidth)
+                    if (aspectRatio > 1)
                     {
-                        x = margin;
-                        y += maxRowHeight + spacing;
-                        maxRowHeight = 0;
+                        drawHeight = cardWidth / aspectRatio;
+                        drawWidth = cardWidth;
+                    }
+                    else
+                    {
+                        drawWidth = cardHeight * aspectRatio;
+                        drawHeight = cardHeight;
                     }
 
-                    if (y + drawHeight > pageHeight)
-                    {
-                        // Create a new page and retry placing the image
-                        page = pdfDocument.AddPage();
-                        gfx = XGraphics.FromPdfPage(page);
-                        x = margin;
-                        y = margin;
-                        maxRowHeight = 0;
-                        imagesOnPage = 0;
-                    }
+                    double offsetX = (cardWidth - drawWidth) / 2;
+                    double offsetY = (cardHeight - drawHeight) / 2;
 
-                    // Draw the image
-                    gfx.DrawImage(img, x, y, drawWidth, drawHeight);
-
-                    // Update positioning
-                    x += drawWidth + spacing;
-                    maxRowHeight = Math.Max(maxRowHeight, drawHeight);
-                    imagesOnPage++;
-
-                    // Move to a new page if needed
-                    if (y + maxRowHeight > pageHeight)
-                    {
-                        page = null; // Forces a new page in the next loop
-                    }
+                    gfx.DrawImage(img, x + offsetX, y + offsetY, drawWidth, drawHeight);
                 }
 
                 pdfDocument.Save(pdfPath);
                 pdfDocument.Close();
 
-                MessageBox.Show($"PDF saved successfully at:\n{pdfPath}");
+                //MessageBox.Show($"PDF saved successfully at:\n{pdfPath}");
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error creating PDF: " + ex.Message);
             }
         }
+
+
+
         private void Manager_Create_Rules_Button_Click(object sender, RoutedEventArgs e)
         {
             Card ruleobject = new Card();
