@@ -18,7 +18,6 @@ using System.Windows.Shapes;
 using System.Xml;
 using Xceed.Wpf.Toolkit;
 using Xceed.Wpf.Toolkit.Primitives;
-using static System.Net.Mime.MediaTypeNames;
 using Application = System.Windows.Application;
 using Image = System.Windows.Controls.Image;
 using MessageBox = System.Windows.MessageBox;
