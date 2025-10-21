@@ -6,7 +6,9 @@
       xmlns:local="clr-namespace:CardWizardWPF"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="DefaultPage">
+      Title="DefaultPage"
+      Background="{StaticResource PrimaryBackgroundColor}">
+      
 
     <Grid>
         <!-- Define grid rows and columns -->
@@ -46,9 +48,9 @@
 
         <!-- Buttons -->
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" Margin="10">
-            <Button Content="Create Deck" Width="200" Margin="5" Click="Create_Deck_Button_Click"/>
-            <Button Content="Edit Deck" Width="200" Margin="5" Click="Edit_Deck_Button_Click"/>
-            <Button Content="Test Deck" Width="200" Margin="5" Click="Test_Deck_Button_Click"/>
+            <Button Content="Create Deck" Width="200" Margin="5" Click="Create_Deck_Button_Click" Style="{StaticResource PrimaryButton}"/>
+            <Button Content="Edit Deck" Width="200" Margin="5" Click="Edit_Deck_Button_Click" Style="{StaticResource PrimaryButton}"/>
+            <Button Content="Test Deck" Width="200" Margin="5" Click="Test_Deck_Button_Click" Style="{StaticResource PrimaryButton}"/>
         </StackPanel>
     </Grid>
 </Page>

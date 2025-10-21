@@ -194,8 +194,6 @@ namespace CardWizardWPF
                         Tag = card, // Store the card object in the Tag property
                         Margin = new Thickness(0),
                         Padding = new Thickness(10),
-                        Width = 100
-                        
                     };
                     cardButton.Click += CardButton_Click;
                     Button plusButton = new Button

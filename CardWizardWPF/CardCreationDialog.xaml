@@ -16,7 +16,7 @@
                 <TextBlock Text="Attributes:" Margin="0,0,0,5"/>
                 <StackPanel Name="AttributePanel" Orientation="Vertical">
                     <StackPanel Orientation="Horizontal">
-                        <TextBox  Width="100"/>
+                        
                     </StackPanel>
                 </StackPanel>
                 <Button Content="+ Attribute" Click="Add_Attribute_Button_Click" HorizontalAlignment="Left" Width="75"/>

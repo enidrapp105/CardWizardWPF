@@ -1,0 +1,32 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="MauveTaupe">#FFA25473</Color>
+    <Color x:Key="Lilac">#FFc48ba3</Color>
+    <Color x:Key="TuscanRed">#ff87303b</Color>
+    <Color x:Key="TyrianPurple">#FF6D003F</Color>
+    
+    
+
+    <SolidColorBrush x:Key="PastelPinkBrush" Color="#87303b" />
+    <SolidColorBrush x:Key="LilacBrush" Color="#c48ba3" />
+    <SolidColorBrush x:Key="TuscanRedBrush" Color="#87303b" />
+    <SolidColorBrush x:Key="TyrianPurpleBrush" Color="#6D003F" />
+    <SolidColorBrush x:Key="MauveTaupeBrush" Color="#a25473" />
+    
+    
+
+    <LinearGradientBrush x:Key="PrimaryBackgroundColor" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="{StaticResource MauveTaupe}" Offset="0"/>
+        <GradientStop Color="{StaticResource Lilac}" Offset="1"/>
+    </LinearGradientBrush>
+
+    
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource TuscanRedBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource LilacBrush}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="Padding" Value="10,5" />
+        
+    </Style>
+
+</ResourceDictionary>
