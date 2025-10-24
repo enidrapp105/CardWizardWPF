@@ -4,6 +4,7 @@
     <Color x:Key="Lilac">#FFc48ba3</Color>
     <Color x:Key="TuscanRed">#ff87303b</Color>
     <Color x:Key="TyrianPurple">#FF6D003F</Color>
+    <Color x:Key="PastelPinkBrush">#FF87303b</Color>
     
     
 

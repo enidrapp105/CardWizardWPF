@@ -18,7 +18,6 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Path = System.IO.Path;
 
-
 namespace CardWizardWPF
 {
     /// <summary>
@@ -74,7 +73,7 @@ namespace CardWizardWPF
             {
                 var button = new Button
                 {
-                    Background = new SolidColorBrush(Colors.White),
+                    Background = {new StaticResourceExtension \}
                     Content = $"{deck.Deckname} ({deck.CardCount} cards)",
                     Width = 300,
                     Margin = new Thickness(5),
