@@ -1,3 +1,6 @@
+# CardWizard
+Card game prototyping tool
+
 Dev notes:
   This started as my capstone project in my senior year of college.
   As of October 2025, I'm picking this up again as a passion project 
